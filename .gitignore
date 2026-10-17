@@ -123,3 +123,5 @@ agents/**/__pycache__/
 /.ignore/
 
 .ruff_cache/
+
+NOTES.md
