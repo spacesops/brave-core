@@ -33,6 +33,13 @@ inline constexpr char kEnsOffchainResolveMethod[] =
 // Enabled: Resolve domain name using Solana JSON-RPC server.
 inline constexpr char kSnsResolveMethod[] = "brave.sns.resolve_method";
 
+// Used to determine which method should be used to resolve Spaces Protocol
+// domains, between:
+// Disabled: Disable all Spaces Protocol domains resolution.
+// Ask: Ask users if they want to enable support of Spaces Protocol.
+// Enabled: Resolve domain name using Spaces Protocol.
+inline constexpr char kSpacesResolveMethod[] = "brave.spaces.resolve_method";
+
 // Added 12/2023.
 inline constexpr char kSnsResolveMethodMigrated[] =
     "brave.sns.resolve_method_migrated";

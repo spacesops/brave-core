@@ -1372,6 +1372,9 @@
   <message name="IDS_SETTINGS_RESOLVE_SNS_DESC" desc="The description for how to handle SNS">
     Resolve Solana Name Service (SNS) domain names
   </message>
+  <message name="IDS_SETTINGS_RESOLVE_SPACES_DESC" desc="The description for how to handle Spaces Protocol">
+    Resolve Spaces Protocol domain names
+  </message>
   <message name="IDS_SETTINGS_ENABLE_ENS_OFFCHAIN_LOOKUP_DESC" desc="ENS offchain lookup method desc">
     <ph name="BEGIN_LINK">&lt;a target="_blank" href="$1"&gt;</ph>Learn More<ph name="END_LINK">&lt;/a&gt;</ph> about ENS offchain lookup privacy considerations.
   </message>

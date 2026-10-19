@@ -25,6 +25,8 @@ void RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
       static_cast<int>(EnsOffchainResolveMethod::kAsk));
   registry->RegisterIntegerPref(kSnsResolveMethod,
                                 static_cast<int>(ResolveMethodTypes::ASK));
+  registry->RegisterIntegerPref(kSpacesResolveMethod,
+                                static_cast<int>(ResolveMethodTypes::ASK));
 
   // Register prefs for migration.
   // Added 12/2023 to reset SNS pref to re-opt in with updated interstitial.
@@ -153,6 +155,36 @@ bool IsSnsResolveMethodEnabled(PrefService* local_state) {
   }
 
   return GetSnsResolveMethod(local_state) == ResolveMethodTypes::ENABLED;
+}
+
+bool IsSpacesTLD(std::string_view host) {
+  return host.ends_with(kSpacesDomain);
+}
+
+void SetSpacesResolveMethod(PrefService* local_state,
+                            ResolveMethodTypes method) {
+  local_state->SetInteger(kSpacesResolveMethod, static_cast<int>(method));
+}
+
+ResolveMethodTypes GetSpacesResolveMethod(PrefService* local_state) {
+  return static_cast<ResolveMethodTypes>(
+      local_state->GetInteger(kSpacesResolveMethod));
+}
+
+bool IsSpacesResolveMethodAsk(PrefService* local_state) {
+  if (!local_state) {
+    return false;  // Treat it as disabled.
+  }
+
+  return GetSpacesResolveMethod(local_state) == ResolveMethodTypes::ASK;
+}
+
+bool IsSpacesResolveMethodEnabled(PrefService* local_state) {
+  if (!local_state) {
+    return false;  // Treat it as disabled.
+  }
+
+  return GetSpacesResolveMethod(local_state) == ResolveMethodTypes::ENABLED;
 }
 
 }  // namespace decentralized_dns

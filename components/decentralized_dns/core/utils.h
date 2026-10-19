@@ -42,6 +42,13 @@ ResolveMethodTypes GetSnsResolveMethod(PrefService* local_state);
 bool IsSnsResolveMethodAsk(PrefService* local_state);
 bool IsSnsResolveMethodEnabled(PrefService* local_state);
 
+bool IsSpacesTLD(std::string_view host);
+void SetSpacesResolveMethod(PrefService* local_state,
+                            ResolveMethodTypes method);
+ResolveMethodTypes GetSpacesResolveMethod(PrefService* local_state);
+bool IsSpacesResolveMethodAsk(PrefService* local_state);
+bool IsSpacesResolveMethodEnabled(PrefService* local_state);
+
 }  // namespace decentralized_dns
 
 #endif  // BRAVE_COMPONENTS_DECENTRALIZED_DNS_CORE_UTILS_H_

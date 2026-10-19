@@ -92,6 +92,27 @@ TEST_F(UtilsUnitTest, IsSnsResolveMethodEnabledd) {
   EXPECT_TRUE(IsSnsResolveMethodEnabled(local_state()));
 }
 
+TEST_F(UtilsUnitTest, IsSpacesTLD) {
+  EXPECT_TRUE(IsSpacesTLD("test.spaces"));
+  EXPECT_FALSE(IsSpacesTLD("test.com"));
+  EXPECT_FALSE(IsSpacesTLD("test.sol"));
+  EXPECT_FALSE(IsSpacesTLD("spaces"));
+}
+
+TEST_F(UtilsUnitTest, IsSpacesResolveMethodAsk) {
+  EXPECT_TRUE(IsSpacesResolveMethodAsk(local_state()));
+
+  SetSpacesResolveMethod(local_state(), ResolveMethodTypes::ENABLED);
+  EXPECT_FALSE(IsSpacesResolveMethodAsk(local_state()));
+}
+
+TEST_F(UtilsUnitTest, IsSpacesResolveMethodEnabled) {
+  EXPECT_FALSE(IsSpacesResolveMethodEnabled(local_state()));
+
+  SetSpacesResolveMethod(local_state(), ResolveMethodTypes::ENABLED);
+  EXPECT_TRUE(IsSpacesResolveMethodEnabled(local_state()));
+}
+
 TEST_F(UtilsUnitTest, ResolveMethodMigration) {
   EXPECT_TRUE(IsUnstoppableDomainsResolveMethodAsk(local_state()));
   EXPECT_TRUE(IsENSResolveMethodAsk(local_state()));
