@@ -125,3 +125,6 @@ agents/**/__pycache__/
 .ruff_cache/
 
 NOTES.md
+.nvmrc
+chrome_debug.log
+
