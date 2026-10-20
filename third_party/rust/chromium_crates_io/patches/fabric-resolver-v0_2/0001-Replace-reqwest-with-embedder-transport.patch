@@ -1,0 +1,393 @@
+From: Brave
+Subject: [PATCH] Replace reqwest/tokio/rand with an embedder HTTP transport
+
+Brave performs relay I/O through the Chromium network stack, so the
+client uses a pluggable `http::Transport` instead of reqwest, runs hint
+requests sequentially instead of via tokio::spawn, and shuffles relays
+without rand. The client module is gated on `signing` (secp256k1 only).
+---
+diff --git a/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/client.rs b/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/client.rs
+index 73cc2f0..8bad18f 100644
+--- a/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/client.rs
++++ b/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/client.rs
+@@ -9,7 +9,6 @@ use libveritas::{
+     MessageError, ProvableOption, SovereigntyState, TrustSet, VerifiedMessage, Veritas, Zone,
+     compute_trust_set,
+ };
+-use rand::seq::SliceRandom;
+ use serde::{Deserialize, Serialize};
+ use std::collections::{HashMap, HashSet};
+ use std::fmt;
+@@ -100,7 +99,7 @@ fn parent_zones(zones: &[Zone], leaf: &Zone) -> Vec<Zone> {
+ }
+ 
+ pub struct Fabric {
+-    http: reqwest::Client,
++    http: crate::http::Client,
+     pool: RelayPool,
+     veritas: Mutex<Veritas>,
+     dev_mode: bool,
+@@ -321,7 +320,7 @@ impl Fabric {
+     /// Create a new client with custom seed URLs.
+     pub fn with_seeds(seeds: &[&str]) -> Self {
+         Self {
+-            http: reqwest::Client::new(),
++            http: crate::http::Client::default(),
+             pool: RelayPool::new(std::iter::empty::<String>()),
+             veritas: Mutex::new(Veritas::new()),
+             dev_mode: false,
+@@ -341,6 +340,12 @@ impl Fabric {
+         self
+     }
+ 
++    /// Use `transport` for all relay HTTP requests.
++    pub fn with_transport(mut self, transport: std::rc::Rc<dyn crate::http::Transport>) -> Self {
++        self.http = crate::http::Client::new(transport);
++        self
++    }
++
+     /// Configure the semi-trusted relay pool + quorum at construction. Defaults
+     /// to the built-in bootstrap pool with `Quorum::Majority`.
+     pub fn with_semi_trusted(self, config: SemiTrustConfig) -> Self {
+@@ -1150,34 +1155,21 @@ impl Fabric {
+                 break;
+             }
+ 
+-            let mut tasks: Vec<(String, tokio::task::JoinHandle<Option<HintsResponse>>)> =
+-                Vec::with_capacity(batch.len());
+             for url in batch {
+-                let http = self.http.clone();
+                 let hints_url = format!("{url}/hints");
+-                let q = hints_query.clone();
+-                tasks.push((
+-                    url.clone(),
+-                    tokio::spawn(async move {
+-                        let mut req = http.get(&hints_url).query(&[("q", &q)]);
+-                        if no_cache {
+-                            req = req.header("cache-control", "no-cache");
+-                        }
+-                        let resp = req.send().await.ok()?;
+-                        if !resp.status().is_success() {
+-                            return None;
+-                        }
++                let mut req = self.http.get(&hints_url).query(&[("q", &hints_query)]);
++                if no_cache {
++                    req = req.header("cache-control", "no-cache");
++                }
++                let hints = match req.send().await {
++                    Ok(resp) if resp.status().is_success() => {
+                         resp.json::<HintsResponse>().await.ok()
+-                    }),
+-                ));
+-            }
+-
+-            for (url, task) in tasks {
+-                match task.await {
+-                    Ok(Some(hints)) => ranked.push((url, hints)),
+-                    _ => {
+-                        self.pool.mark_failed(&url);
+                     }
++                    _ => None,
++                };
++                match hints {
++                    Some(hints) => ranked.push((url.clone(), hints)),
++                    None => self.pool.mark_failed(url),
+                 }
+             }
+         }
+@@ -1390,7 +1382,7 @@ fn epoch_hint_from_zone(zone: &Zone) -> Option<EpochHint> {
+     }
+ }
+ 
+-async fn fetch_peers(http: &reqwest::Client, relay_url: &str) -> Result<Vec<PeerInfo>> {
++async fn fetch_peers(http: &crate::http::Client, relay_url: &str) -> Result<Vec<PeerInfo>> {
+     let url = format!("{relay_url}/peers");
+     let resp = http.get(&url).send().await.map_err(|e| {
+         Error::Decode(std::io::Error::new(
+@@ -1430,7 +1422,7 @@ impl RelayPool {
+     /// Shuffle in place, sort failed to back, return up to `n` URLs.
+     pub fn shuffled_urls_n(&self, n: usize) -> Vec<String> {
+         let mut entries = self.inner.lock().unwrap();
+-        entries.shuffle(&mut rand::rng());
++        crate::http::shuffle(&mut entries);
+         entries.sort_by_key(|e| e.failures);
+         entries.iter().take(n).map(|e| e.url.clone()).collect()
+     }
+@@ -1520,7 +1512,7 @@ impl From<hex::FromHexError> for Error {
+ ///
+ /// Returns: (<root-hash>, <peers...>)
+ async fn fetch_latest_trust_id(
+-    http: &reqwest::Client,
++    http: &crate::http::Client,
+     peers: &[String],
+ ) -> Result<(TrustId, Vec<String>)> {
+     let mut votes: HashMap<(String, u32), Vec<String>> = HashMap::new();
+@@ -1578,7 +1570,7 @@ async fn fetch_latest_trust_id(
+ }
+ 
+ async fn fetch_anchor_set(
+-    http: &reqwest::Client,
++    http: &crate::http::Client,
+     trust_id: TrustId,
+     peers: &[String],
+ ) -> Result<AnchorBundle> {
+@@ -1675,7 +1667,7 @@ fn parse_xonly_hex(hex_str: &str) -> Result<[u8; 32]> {
+ /// HEAD a relay's `/anchors`, read the signed `(root, height)`, and verify the
+ /// `X-Anchor-Sig` against the pinned key. Returns the verified `(root, height)`.
+ async fn fetch_signed_anchor_head(
+-    http: &reqwest::Client,
++    http: &crate::http::Client,
+     relay_url: &str,
+     pubkey: &[u8; 32],
+ ) -> Result<([u8; 32], u32)> {
+diff --git a/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/http.rs b/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/http.rs
+new file mode 100644
+index 0000000..805f66f
+--- /dev/null
++++ b/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/http.rs
+@@ -0,0 +1,230 @@
++//! Minimal HTTP client used by `client` in place of `reqwest`.
++//!
++//! The embedder performs the actual network I/O by implementing [`Transport`]
++//! and installing it with [`crate::client::Fabric::with_transport`]. Only the
++//! subset of the `reqwest` API used by `client` is provided.
++
++use serde::de::DeserializeOwned;
++use std::fmt;
++use std::future::Future;
++use std::pin::Pin;
++use std::rc::Rc;
++use std::sync::atomic::{AtomicU64, Ordering};
++
++/// An HTTP request handed to the embedder.
++pub struct Request {
++    pub method: &'static str,
++    pub url: String,
++    pub headers: Vec<(String, String)>,
++    pub body: Vec<u8>,
++}
++
++pub type TransportFuture = Pin<Box<dyn Future<Output = Result<Response, Error>>>>;
++
++/// Network transport supplied by the embedder.
++pub trait Transport {
++    fn send(&self, request: Request) -> TransportFuture;
++    /// Random seed used to shuffle the relay pool.
++    fn random_seed(&self) -> u64;
++}
++
++#[derive(Debug, Clone)]
++pub struct Error(String);
++
++impl Error {
++    pub fn new(msg: impl Into<String>) -> Self {
++        Self(msg.into())
++    }
++}
++
++impl fmt::Display for Error {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.write_str(&self.0)
++    }
++}
++
++impl std::error::Error for Error {}
++
++#[derive(Debug, Clone, Copy)]
++pub struct StatusCode(u16);
++
++impl StatusCode {
++    pub fn is_success(&self) -> bool {
++        (200..300).contains(&self.0)
++    }
++
++    pub fn as_u16(&self) -> u16 {
++        self.0
++    }
++}
++
++pub struct HeaderValue(String);
++
++impl HeaderValue {
++    pub fn to_str(&self) -> Result<&str, Error> {
++        Ok(&self.0)
++    }
++}
++
++pub struct HeaderMap(Vec<(String, HeaderValue)>);
++
++impl HeaderMap {
++    pub fn get(&self, name: &str) -> Option<&HeaderValue> {
++        self.0
++            .iter()
++            .find(|(k, _)| k.eq_ignore_ascii_case(name))
++            .map(|(_, v)| v)
++    }
++}
++
++pub struct Response {
++    status: StatusCode,
++    headers: HeaderMap,
++    body: Vec<u8>,
++}
++
++impl Response {
++    pub fn new(status: u16, headers: Vec<(String, String)>, body: Vec<u8>) -> Self {
++        Self {
++            status: StatusCode(status),
++            headers: HeaderMap(
++                headers
++                    .into_iter()
++                    .map(|(k, v)| (k, HeaderValue(v)))
++                    .collect(),
++            ),
++            body,
++        }
++    }
++
++    pub fn status(&self) -> StatusCode {
++        self.status
++    }
++
++    pub fn headers(&self) -> &HeaderMap {
++        &self.headers
++    }
++
++    pub async fn bytes(self) -> Result<Vec<u8>, Error> {
++        Ok(self.body)
++    }
++
++    pub async fn text(self) -> Result<String, Error> {
++        String::from_utf8(self.body).map_err(|e| Error::new(e.to_string()))
++    }
++
++    pub async fn json<T: DeserializeOwned>(self) -> Result<T, Error> {
++        serde_json::from_slice(&self.body).map_err(|e| Error::new(e.to_string()))
++    }
++}
++
++#[derive(Clone, Default)]
++pub struct Client {
++    transport: Option<Rc<dyn Transport>>,
++}
++
++impl Client {
++    pub fn new(transport: Rc<dyn Transport>) -> Self {
++        seed_shuffle(transport.random_seed());
++        Self {
++            transport: Some(transport),
++        }
++    }
++
++    pub fn get(&self, url: impl Into<String>) -> RequestBuilder {
++        self.request("GET", url)
++    }
++
++    pub fn head(&self, url: impl Into<String>) -> RequestBuilder {
++        self.request("HEAD", url)
++    }
++
++    pub fn post(&self, url: impl Into<String>) -> RequestBuilder {
++        self.request("POST", url)
++    }
++
++    fn request(&self, method: &'static str, url: impl Into<String>) -> RequestBuilder {
++        RequestBuilder {
++            transport: self.transport.clone(),
++            request: Request {
++                method,
++                url: url.into(),
++                headers: Vec::new(),
++                body: Vec::new(),
++            },
++        }
++    }
++}
++
++pub struct RequestBuilder {
++    transport: Option<Rc<dyn Transport>>,
++    request: Request,
++}
++
++impl RequestBuilder {
++    pub fn query<K: AsRef<str>, V: AsRef<str>>(mut self, pairs: &[(K, V)]) -> Self {
++        for (k, v) in pairs {
++            let sep = if self.request.url.contains('?') { '&' } else { '?' };
++            self.request.url.push(sep);
++            self.request.url.push_str(&encode_component(k.as_ref()));
++            self.request.url.push('=');
++            self.request.url.push_str(&encode_component(v.as_ref()));
++        }
++        self
++    }
++
++    pub fn header(mut self, name: &str, value: &str) -> Self {
++        self.request
++            .headers
++            .push((name.to_string(), value.to_string()));
++        self
++    }
++
++    pub fn body(mut self, body: impl Into<Vec<u8>>) -> Self {
++        self.request.body = body.into();
++        self
++    }
++
++    pub async fn send(self) -> Result<Response, Error> {
++        match self.transport {
++            Some(transport) => transport.send(self.request).await,
++            None => Err(Error::new("no HTTP transport installed")),
++        }
++    }
++}
++
++fn encode_component(s: &str) -> String {
++    let mut out = String::with_capacity(s.len());
++    for b in s.bytes() {
++        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~') {
++            out.push(b as char);
++        } else {
++            out.push_str(&format!("%{b:02X}"));
++        }
++    }
++    out
++}
++
++static SHUFFLE_STATE: AtomicU64 = AtomicU64::new(0x9E37_79B9_7F4A_7C15);
++
++fn seed_shuffle(seed: u64) {
++    SHUFFLE_STATE.store(seed | 1, Ordering::Relaxed);
++}
++
++fn next_random() -> u64 {
++    // xorshift64*; only used to spread load across relays.
++    let mut x = SHUFFLE_STATE.load(Ordering::Relaxed);
++    x ^= x >> 12;
++    x ^= x << 25;
++    x ^= x >> 27;
++    SHUFFLE_STATE.store(x, Ordering::Relaxed);
++    x.wrapping_mul(0x2545_F491_4F6C_DD1D)
++}
++
++/// Fisher-Yates shuffle, replacing `rand::seq::SliceRandom::shuffle`.
++pub fn shuffle<T>(items: &mut [T]) {
++    for i in (1..items.len()).rev() {
++        let j = (next_random() % (i as u64 + 1)) as usize;
++        items.swap(i, j);
++    }
++}
+diff --git a/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/lib.rs b/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/lib.rs
+index 1bacd11..e26a85d 100644
+--- a/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/lib.rs
++++ b/brave/third_party/rust/chromium_crates_io/vendor/fabric-resolver-v0_2/rust/src/lib.rs
+@@ -4,8 +4,9 @@
+ //! Only the `Message` type from libveritas remains binary (borsh).
+ 
+ pub mod anchor;
+-#[cfg(feature = "client")]
++#[cfg(feature = "signing")]
+ pub mod client;
++pub mod http;
+ pub mod seeds;
+ #[cfg(feature = "signing")]
+ pub mod signing;

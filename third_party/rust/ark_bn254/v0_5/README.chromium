@@ -1,0 +1,10 @@
+Name: ark-bn254
+URL: https://crates.io/crates/ark-bn254
+Version: 0.5.0
+Revision: df907e8c1601a898c2903ed7ab7bbbb10607f36b
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/ark-bn254-v0_5/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: The BN254 pairing-friendly elliptic curve

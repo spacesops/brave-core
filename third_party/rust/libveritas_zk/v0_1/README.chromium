@@ -1,0 +1,10 @@
+Name: libveritas_zk
+URL: https://crates.io/crates/libveritas_zk
+Version: 0.1.1
+Revision: a13ccf63598eb92b6ca07192dc80f5f72a9d2e48
+License: Apache-2.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: ZK guest types and helpers for libveritas.

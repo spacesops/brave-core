@@ -1,0 +1,10 @@
+Name: include_bytes_aligned
+URL: https://crates.io/crates/include_bytes_aligned
+Version: 0.1.4
+Revision: 88ab560496ffde828e409f93266207ddda3440c2
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: A simple macro that embeds the bytes of an external file into the executable and guarantees that they are aligned.

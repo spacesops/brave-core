@@ -1,0 +1,10 @@
+Name: ark-std
+URL: https://crates.io/crates/ark-std
+Version: 0.5.0
+Revision: caab1d5cadadc7470ce1c652b6863619c75e2324
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/ark-std-v0_5/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: A library for no_std compatibility

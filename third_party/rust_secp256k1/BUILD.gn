@@ -1,0 +1,52 @@
+# Copyright (c) 2026 The Brave Authors. All rights reserved.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Builds the libsecp256k1 copy vendored with the `secp256k1-sys` crate,
+# replacing its `cc`-based build.rs. Defines mirror that build.rs.
+
+_src = "//brave/third_party/rust/chromium_crates_io/vendor/secp256k1-sys-v0_10/depend/secp256k1"
+
+config("warnings") {
+  cflags = []
+  if (is_clang) {
+    cflags += [
+      "-Wno-unused-function",
+      "-Wno-unused-parameter",
+    ]
+  }
+}
+
+static_library("rust_secp256k1") {
+  visibility = [ "//brave/third_party/rust/secp256k1_sys/*" ]
+
+  sources = [
+    "$_src/contrib/lax_der_parsing.c",
+    "$_src/src/precomputed_ecmult.c",
+    "$_src/src/precomputed_ecmult_gen.c",
+    "$_src/src/secp256k1.c",
+  ]
+  include_dirs = [
+    _src,
+    "$_src/include",
+    "$_src/src",
+  ]
+  defines = [
+    "SECP256K1_API=",
+    "ENABLE_MODULE_ECDH=1",
+    "ENABLE_MODULE_SCHNORRSIG=1",
+    "ENABLE_MODULE_EXTRAKEYS=1",
+    "ENABLE_MODULE_ELLSWIFT=1",
+    "ECMULT_GEN_PREC_BITS=4",
+    "ECMULT_WINDOW_SIZE=15",
+    "USE_EXTERNAL_DEFAULT_CALLBACKS=1",
+    "printf(...)=",
+  ]
+
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [
+    "//build/config/compiler:no_chromium_code",
+    ":warnings",
+  ]
+}

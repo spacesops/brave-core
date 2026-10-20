@@ -1,0 +1,10 @@
+Name: ark-serialize-derive
+URL: https://crates.io/crates/ark-serialize-derive
+Version: 0.5.0
+Revision: 7ad88c46e859a94ab8e0b19fd8a217c3dc472f1c
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/ark-serialize-derive-v0_5/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: A library for deriving serialization traits for the arkworks ecosystem

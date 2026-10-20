@@ -1,0 +1,96 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "risc0_circuit_recursion"
+  epoch = "4"
+  crate_type = "rlib"
+  crate_root = "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/control_id.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/info.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/layout.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/poly_ext.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/hal/cpu.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/hal/cuda.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/hal/metal.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/hal/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/preflight.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/program.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/witgen.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/prove/zkr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/taps.rs",
+  ]
+  inputs = [ "//brave/third_party/rust/chromium_crates_io/vendor/risc0-circuit-recursion-v4/src/layout.rs.inc" ]
+
+  build_native_rust_unit_tests = false
+  edition = "2021"
+  cargo_pkg_name = "risc0-circuit-recursion"
+  cargo_pkg_description = "RISC Zero circuit for recursion"
+  cargo_pkg_repository = "https://github.com/risc0/risc0/"
+  cargo_pkg_version = "4.0.5"
+
+  allow_unsafe = true
+
+  deps = [
+    "//brave/third_party/rust/anyhow/v1:lib",
+    "//brave/third_party/rust/bytemuck/v1:lib",
+    "//brave/third_party/rust/risc0_core/v3:lib",
+    "//brave/third_party/rust/risc0_zkp/v3:lib",
+    "//brave/third_party/rust/tracing/v0_1:lib",
+  ]
+  if (rust_abi_target == "aarch64-apple-darwin" ||
+      rust_abi_target == "aarch64-apple-ios" ||
+      rust_abi_target == "aarch64-apple-ios-macabi" ||
+      rust_abi_target == "aarch64-apple-ios-sim" ||
+      rust_abi_target == "arm64e-apple-ios" ||
+      rust_abi_target == "armv7s-apple-ios" ||
+      rust_abi_target == "i386-apple-ios" ||
+      rust_abi_target == "x86_64-apple-darwin" ||
+      rust_abi_target == "x86_64-apple-ios" ||
+      rust_abi_target == "x86_64-apple-ios-macabi") {
+    deps += [ "//brave/third_party/rust/metal/v0_29:lib" ]
+  }
+  build_deps = [ "//brave/third_party/rust/hex/v0_4:buildrs_support" ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

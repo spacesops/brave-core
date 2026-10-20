@@ -1,0 +1,10 @@
+Name: ruint
+URL: https://crates.io/crates/ruint
+Version: 1.20.1
+Revision: 8a242035914783682b9e6a4bc87e0d65221bff77
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Unsigned integer type with const-generic bit length

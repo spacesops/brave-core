@@ -1,0 +1,10 @@
+Name: spaces_nums
+URL: https://crates.io/crates/spaces_nums
+Version: 0.5.0
+Revision: 77653f01889ddc86337e4b27d7d3ae4fc334a117
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Numeric identifier extension for the Spaces protocol.

@@ -1,0 +1,10 @@
+Name: libveritas
+URL: https://crates.io/crates/libveritas
+Version: 0.4.5
+Revision: d2cb558830adfdfcc44613591d2c0329160fcd3b
+License: Apache-2.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Offline verification library for Spaces protocol certificates and zone records.

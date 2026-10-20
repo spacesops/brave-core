@@ -41,6 +41,7 @@ cargo_crate("lib") {
   features = [
     "add",
     "add_assign",
+    "debug",
     "default",
     "std",
   ]

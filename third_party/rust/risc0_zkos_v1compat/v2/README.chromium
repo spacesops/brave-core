@@ -1,0 +1,10 @@
+Name: risc0-zkos-v1compat
+URL: https://crates.io/crates/risc0-zkos-v1compat
+Version: 2.2.3
+Revision: 8c215e2f4ccdd935f0517bf05d90f1ae032840a9
+License: Apache-2.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: RISC Zero zero-knowledge VM kernel for v1 compatibility

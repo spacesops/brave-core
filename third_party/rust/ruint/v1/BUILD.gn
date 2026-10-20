@@ -1,0 +1,145 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "ruint"
+  epoch = "1"
+  crate_type = "rlib"
+  crate_root =
+      "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/add.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/add.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/div/knuth.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/div/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/div/reciprocal.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/div/small.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/gcd/matrix.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/gcd/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/mul.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/algorithms/mul_redc.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/aliases.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/base_convert.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/bit_arr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/bits.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/bytes.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/cmp.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/const_for.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/div.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/fmt.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/from.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/gcd.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/log.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/macros.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/modular.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/mul.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/pow.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/root.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/special.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/string.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/alloy_rlp.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/arbitrary.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/ark_ff.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/ark_ff_04.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/ark_ff_05.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/ark_ff_06.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/bigdecimal.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/bincode_2.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/bn_rs.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/borsh.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/bytemuck.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/der.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/diesel.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/fastrlp_03.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/fastrlp_04.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/num_bigint.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/num_integer.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/num_traits.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/postgres.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/primitive_types.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/proptest.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/pyo3.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/quickcheck.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/rand.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/rand_09.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/rkyv.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/rlp.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/scale.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/serde.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/sqlx.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/ssz.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/subtle.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/valuable.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/support/zeroize.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/utils.rs",
+  ]
+  inputs = [ "//brave/third_party/rust/chromium_crates_io/vendor/ruint-v1/src/../README.md" ]
+
+  build_native_rust_unit_tests = false
+  edition = "2024"
+  cargo_pkg_authors = "Remco Bloemen <remco@wicked.ventures>"
+  cargo_pkg_name = "ruint"
+  cargo_pkg_description = "Unsigned integer type with const-generic bit length"
+  cargo_pkg_repository = "https://github.com/alloy-rs/ruint"
+  cargo_pkg_version = "1.20.1"
+
+  allow_unsafe = true
+
+  deps = [
+    "//brave/third_party/rust/borsh/v1:lib",
+    "//brave/third_party/rust/rand/v0_9:lib",
+    "//brave/third_party/rust/ruint_macro/v1:lib",
+    "//brave/third_party/rust/serde_core/v1:lib",
+  ]
+  aliased_deps = {
+    rand_09 = "//brave/third_party/rust/rand/v0_9:lib"
+  }
+  features = [
+    "alloc",
+    "borsh",
+    "rand-09",
+    "serde",
+  ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

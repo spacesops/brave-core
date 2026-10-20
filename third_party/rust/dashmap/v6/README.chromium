@@ -1,0 +1,10 @@
+Name: dashmap
+URL: https://crates.io/crates/dashmap
+Version: 6.2.1
+Revision: 749ed1f965115e9e1920d2fc7ae65f633858b021
+License: MIT
+License File: //brave/third_party/rust/chromium_crates_io/vendor/dashmap-v6/LICENSE
+Shipped: yes
+Security Critical: yes
+
+Description: Blazing fast concurrent HashMap for Rust.

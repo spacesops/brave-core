@@ -1,0 +1,10 @@
+Name: sip7
+URL: https://crates.io/crates/sip7
+Version: 0.5.0
+Revision: 77653f01889ddc86337e4b27d7d3ae4fc334a117
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Signed Inscribed Packets (SIP-7): signed resource-record payloads for the Spaces protocol.

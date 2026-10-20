@@ -49,6 +49,7 @@ cargo_crate("lib") {
     deps += [ "//brave/third_party/rust/cpufeatures/v0_2:lib" ]
   }
   features = [
+    "compress",
     "default",
     "std",
   ]

@@ -1,0 +1,9 @@
+Name: block
+URL: https://crates.io/crates/block
+Version: 0.1.6
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Rust interface for Apple's C language extension of blocks.

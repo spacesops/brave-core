@@ -1,0 +1,10 @@
+Name: metal
+URL: https://crates.io/crates/metal
+Version: 0.29.0
+Revision: b8a9e8cae6c7cea3264ffe790c3c1f2294f8464f
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/metal-v0_29/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: Rust bindings for Metal

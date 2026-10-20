@@ -28,6 +28,7 @@ challenge-bypass-ristretto-cxx = "1"
 zcash = "1"
 anonymous-credentials = "0.1"
 document-extractor = "0.1"
+spaces-cxx = "0.1"
 
 [patch.crates-io.idna_v1]
 path = "../idna/v1/crate"
@@ -92,6 +93,22 @@ package = "anonymous-credentials"
 [patch.crates-io.document-extractor_v0_1]
 path = "../../../components/web_discovery/browser/document_extractor"
 package = "document-extractor"
+
+[patch.crates-io.spaces-cxx_v0_1]
+path = "../../../components/decentralized_dns/browser/spaces/rs"
+package = "spaces-cxx"
+
+[patch.crates-io.anyhow_v1]
+path = "../../../../third_party/rust/chromium_crates_io/vendor/anyhow-v1"
+package = "anyhow"
+
+[patch.crates-io.bytemuck_v1]
+path = "../../../../third_party/rust/chromium_crates_io/vendor/bytemuck-v1"
+package = "bytemuck"
+
+[patch.crates-io.rustversion_v1]
+path = "../../../../third_party/rust/chromium_crates_io/vendor/rustversion-v1"
+package = "rustversion"
 
 [patch.crates-io.anstyle]
 path = "../../../../third_party/rust/chromium_crates_io/vendor/anstyle-v1"

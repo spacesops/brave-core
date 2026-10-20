@@ -1,0 +1,185 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "educe"
+  epoch = "0.6"
+  crate_type = "proc-macro"
+  crate_root =
+      "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/bound.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/expr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/ident_bool.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/ident_index.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/int.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/path.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/tools/discriminant_type.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/tools/hash_type.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/tools/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/type.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/unsafe_punctuated_meta.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/common/where_predicates_bool.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/supported_traits.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/clone/clone_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/clone/clone_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/clone/clone_union.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/clone/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/clone/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/clone/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/clone/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/copy/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/copy/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/copy/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/copy/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/common.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/debug_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/debug_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/debug_union.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/debug/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/default_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/default_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/default_union.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/default/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref/deref_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref/deref_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref_mut/deref_mut_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref_mut/deref_mut_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref_mut/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref_mut/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref_mut/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref_mut/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/deref_mut/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/eq/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/eq/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/eq/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/eq/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/hash_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/hash_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/hash_union.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/hash/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/common.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/into_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/into_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/into/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/ord/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/ord/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/ord/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/ord/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/ord/ord_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/ord/ord_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/ord/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/partial_eq_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/partial_eq_struct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_eq/partial_eq_union.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_ord/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_ord/models/field_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_ord/models/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_ord/models/type_attribute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_ord/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_ord/partial_ord_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/src/trait_handlers/partial_ord/partial_ord_struct.rs",
+  ]
+  inputs = []
+
+  build_native_rust_unit_tests = false
+  edition = "2021"
+  cargo_pkg_authors = "Magic Len <len@magiclen.org>"
+  cargo_pkg_name = "educe"
+  cargo_pkg_description = "This crate offers procedural macros designed to facilitate the swift implementation of Rust's built-in traits."
+  cargo_pkg_repository = "https://github.com/magiclen/educe"
+  cargo_pkg_version = "0.6.0"
+
+  allow_unsafe = true
+
+  deps = [
+    "//brave/third_party/rust/enum_ordinalize/v4:lib",
+    "//brave/third_party/rust/proc_macro2/v1:lib",
+    "//brave/third_party/rust/quote/v1:lib",
+    "//brave/third_party/rust/syn/v2:lib",
+  ]
+  features = [
+    "Clone",
+    "Copy",
+    "Debug",
+    "Default",
+    "Deref",
+    "DerefMut",
+    "Eq",
+    "Hash",
+    "Into",
+    "Ord",
+    "PartialEq",
+    "PartialOrd",
+    "default",
+  ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

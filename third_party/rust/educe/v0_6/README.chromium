@@ -1,0 +1,10 @@
+Name: educe
+URL: https://crates.io/crates/educe
+Version: 0.6.0
+Revision: bc05181883f49d4fb475375891fc53b6747f0eb6
+License: MIT
+License File: //brave/third_party/rust/chromium_crates_io/vendor/educe-v0_6/LICENSE
+Shipped: yes
+Security Critical: yes
+
+Description: This crate offers procedural macros designed to facilitate the swift implementation of Rust's built-in traits.

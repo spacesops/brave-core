@@ -1,0 +1,97 @@
+use crate::BatchReader;
+use alloc::vec::Vec;
+use borsh::{BorshDeserialize, BorshSerialize};
+use serde::{Deserialize, Serialize};
+use spacedb::{
+    Hash, NodeHasher, Sha256Hasher, VerifyError,
+    subtree::{SubTree, ValueOrHash},
+};
+
+#[derive(Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+pub struct Commitment {
+    pub policy_step: [u32; 8],
+    pub policy_fold: [u32; 8],
+    pub initial_root: Hash,
+    pub final_root: Hash,
+    pub rolling_hash: Hash,
+    pub kind: CommitmentKind,
+}
+
+#[derive(Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+pub enum CommitmentKind {
+    Fold,
+    Step,
+}
+
+#[derive(Debug)]
+pub enum GuestError {
+    KeyExists,
+    IncompleteSubTree,
+}
+
+pub type Result<T> = core::result::Result<T, GuestError>;
+
+pub fn run(
+    subtree: Vec<u8>,
+    input: Vec<u8>,
+    policy_step: [u32; 8],
+    policy_fold: [u32; 8],
+) -> Result<Commitment> {
+    let mut subtree: SubTree<Sha256Hasher> =
+        borsh::from_slice(&subtree).expect("decoding subtree error");
+
+    let initial_root = subtree.compute_root().unwrap();
+    let reader = BatchReader(&input);
+
+    for entry in reader.iter() {
+        subtree
+            .insert(
+                entry
+                    .handle
+                    .try_into()
+                    .expect("32 byte subspace hash slice"),
+                ValueOrHash::Hash(
+                    entry
+                        .value_hash
+                        .try_into()
+                        .expect("32 byte value hash slice"),
+                ),
+            )
+            .map_err(|e| match e {
+                spacedb::Error::Verify(e) => match e {
+                    VerifyError::IncompleteProof => GuestError::IncompleteSubTree,
+                    VerifyError::KeyNotFound => GuestError::IncompleteSubTree,
+                    VerifyError::RootMismatch => GuestError::IncompleteSubTree,
+                    VerifyError::KeyExists => GuestError::KeyExists,
+                },
+                _ => {
+                    unreachable!("expected verify error")
+                }
+            })?;
+    }
+
+    let final_root = subtree.compute_root().unwrap();
+
+    Ok(Commitment {
+        initial_root,
+        final_root,
+        rolling_hash: {
+            let mut msg = [0u8; 64];
+            msg[..32].copy_from_slice(&initial_root);
+            msg[32..].copy_from_slice(&final_root);
+            Sha256Hasher::hash(&msg)
+        },
+        policy_step,
+        policy_fold,
+        kind: CommitmentKind::Step,
+    })
+}
+
+impl core::fmt::Display for GuestError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match *self {
+            GuestError::KeyExists => write!(f, "Cannot register a subspace that already exists"),
+            GuestError::IncompleteSubTree => write!(f, "SubTree is incomplete"),
+        }
+    }
+}

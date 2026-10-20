@@ -1,0 +1,10 @@
+Name: borsh_utils
+URL: https://crates.io/crates/borsh_utils
+Version: 0.5.0
+Revision: 77653f01889ddc86337e4b27d7d3ae4fc334a117
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Borsh serialization helpers for Bitcoin primitives used by the Spaces protocol.

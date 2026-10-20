@@ -1,0 +1,10 @@
+Name: rrs-lib
+URL: https://crates.io/crates/rrs-lib
+Version: 0.1.0
+Revision: 7f93313d11d936698cff72caab9bd5b034fc8658
+License: Apache-2.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: A library for building RISC-V instruction set simulators

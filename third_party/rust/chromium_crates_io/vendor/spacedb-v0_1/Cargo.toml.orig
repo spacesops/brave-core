@@ -1,0 +1,55 @@
+workspace = { members = ["example"] }
+
+[package]
+name = "spacedb"
+version = "0.1.4"
+edition = "2024"
+rust-version = "1.85"
+description = "A cryptographically verifiable data store and universal accumulator for the Spaces protocol."
+repository = "https://github.com/spacesprotocol/spacedb"
+homepage = "https://spacesprotocol.org"
+documentation = "https://docs.rs/spacedb"
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["merkle", "trie", "accumulator", "verifiable", "no-std"]
+categories = ["database-implementations", "cryptography", "data-structures"]
+exclude = [
+    "example/*",
+    "tests/data/*",
+    "target/*",
+    ".github/*",
+    ".commitlintrc.yml",
+    "release-plz.toml",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
+[dependencies]
+libc = { version = "0.2.150", optional = true }
+bincode = { version = "2.0.1", default-features = false, features = ["alloc", "derive", "std"], optional = true }
+borsh = { version = "1.5", default-features = false, features = ["derive"] }
+hex = { version = "0.4.3", optional = true }
+rusqlite = { version = "0.31", features = ["bundled"], optional = true }
+
+# optional wasm feature
+wasm-bindgen = { version ="0.2.100", optional = true }
+js-sys = { version = "0.3.77", optional = true }
+
+[dev-dependencies]
+rand = "0.8.5"
+
+[dependencies.sha2]
+version = "0.10.6"
+
+[features]
+default = ["std", "extras"]
+std = ["libc", "hex", "bincode"]
+wasm = ["wasm-bindgen", "js-sys"]
+extras = []
+hash-idx = ["std", "rusqlite"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

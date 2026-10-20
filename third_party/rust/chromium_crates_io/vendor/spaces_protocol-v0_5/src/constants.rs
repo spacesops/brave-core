@@ -1,0 +1,173 @@
+use bitcoin::{
+    BlockHash, Sequence,
+    absolute::{Height, LockTime},
+    blockdata::transaction::Version,
+    hashes::Hash,
+};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+/// Represents a specific point in the blockchain
+/// Could be used as a general block identifier.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct ChainAnchor {
+    pub hash: BlockHash,
+    pub height: u32,
+}
+
+pub const SPACES_SIGNED_MSG_PREFIX: &[u8] = b"\x17Spaces Signed Message:\n";
+
+pub const RESERVED_SPACES: [&[u8]; 3] = [b"\x07example", b"\x04test", b"\x05local"];
+
+/// The number of blocks between each rollout of new spaces for auction.
+pub const ROLLOUT_BLOCK_INTERVAL: u32 = 144;
+
+/// The number of spaces released for auction at each rollout interval.
+pub const ROLLOUT_BATCH_SIZE: usize = 10;
+
+/// The duration of the auction phase in blocks.
+/// After this period, the winning bidder can safely register the name.
+pub const AUCTION_DURATION: u32 = 144 * 10;
+
+/// The number of blocks by which an auction is extended
+/// if a bid is placed near the end of the original auction period.
+pub const AUCTION_EXTENSION_ON_BID: u32 = 144;
+
+/// The interval, in blocks, at which space holders must renew their ownership.
+/// Renewal is done by performing a transaction, which extends the space's lifetime.
+pub const RENEWAL_INTERVAL: u32 = 144 * 365;
+
+/// The transaction version used in the carried bid PSBT.
+/// This must match for correct PSBT reconstruction.
+pub const BID_PSBT_TX_VERSION: Version = Version::TWO;
+
+/// The lock time for bid PSBTs.
+/// This must match for correct PSBT reconstruction.
+pub const BID_PSBT_TX_LOCK_TIME: LockTime = LockTime::Blocks(Height::ZERO);
+
+/// The sequence number for bid PSBT inputs.
+/// This enables Replace-By-Fee (RBF) (mainly for older Bitcoin Core versions).
+/// It must match for correct PSBT reconstruction.
+pub const BID_PSBT_INPUT_SEQUENCE: Sequence = Sequence::ENABLE_RBF_NO_LOCKTIME;
+
+impl ChainAnchor {
+    pub fn new(hash: [u8; 32], height: u32) -> Self {
+        Self {
+            hash: BlockHash::from_byte_array(hash),
+            height,
+        }
+    }
+
+    pub const MAINNET: fn() -> Self = || {
+        Self::new(
+            [
+                0x0c, 0x5a, 0x27, 0x95, 0xe2, 0xb7, 0xd5, 0x06, 0xdf, 0x09, 0x6a, 0x33, 0x28, 0x47,
+                0xba, 0x98, 0x9f, 0xa6, 0x37, 0x9d, 0xfd, 0x2d, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ],
+            871_222,
+        )
+    };
+
+    // Testnet4 activation block
+    pub const TESTNET4: fn() -> Self = || {
+        Self::new(
+            [
+                0xcb, 0xf2, 0xef, 0x93, 0xe8, 0xd0, 0xca, 0x10, 0xfb, 0x09, 0xb0, 0xe2, 0x69, 0x97,
+                0x7a, 0xf0, 0x33, 0x72, 0x99, 0x88, 0x9a, 0x16, 0x26, 0xa1, 0x4b, 0xc9, 0xc8, 0xe2,
+                0x00, 0x00, 0x00, 0x00,
+            ],
+            50_000,
+        )
+    };
+
+    // Testnet activation block
+    pub const TESTNET: fn() -> Self = || {
+        Self::new(
+            [
+                0xb8, 0x9d, 0xd5, 0xe4, 0x5e, 0xd7, 0x0a, 0x50, 0x73, 0x25, 0x2e, 0x0f, 0x5f, 0xba,
+                0x4a, 0x9e, 0xd2, 0x37, 0x73, 0x9d, 0x3b, 0x5a, 0x19, 0x58, 0x1a, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ],
+            2_865_460,
+        )
+    };
+
+    // Regtest activation block
+    pub const REGTEST: fn() -> Self = || {
+        Self::new(
+            [
+                0x06, 0x22, 0x6e, 0x46, 0x11, 0x1a, 0x0b, 0x59, 0xca, 0xaf, 0x12, 0x60, 0x43, 0xeb,
+                0x5b, 0xbf, 0x28, 0xc3, 0x4f, 0x3a, 0x5e, 0x33, 0x2a, 0x1f, 0xc7, 0xb2, 0xb7, 0x3c,
+                0xf1, 0x88, 0x91, 0x0f,
+            ],
+            0,
+        )
+    };
+
+    pub const NUMS_REGTEST: fn() -> Self = || {
+        Self::new(
+            [
+                0x06, 0x22, 0x6e, 0x46, 0x11, 0x1a, 0x0b, 0x59, 0xca, 0xaf, 0x12, 0x60, 0x43, 0xeb,
+                0x5b, 0xbf, 0x28, 0xc3, 0x4f, 0x3a, 0x5e, 0x33, 0x2a, 0x1f, 0xc7, 0xb2, 0xb7, 0x3c,
+                0xf1, 0x88, 0x91, 0x0f,
+            ],
+            0,
+        )
+    };
+}
+
+#[cfg(feature = "borsh")]
+pub mod borsh_impl {
+    use alloc::vec::Vec;
+
+    use bitcoin::{BlockHash, hashes::Hash};
+    use borsh::{BorshDeserialize, BorshSerialize, io};
+
+    use crate::constants::ChainAnchor;
+
+    impl BorshSerialize for ChainAnchor {
+        fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+            writer.write_all(&self.hash.to_byte_array())?;
+            self.height.serialize(writer)
+        }
+    }
+
+    impl BorshDeserialize for ChainAnchor {
+        fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
+            let mut hash_bytes = [0u8; 32];
+            reader.read_exact(&mut hash_bytes)?;
+            let height: u32 = BorshDeserialize::deserialize_reader(reader)?;
+            Ok(Self {
+                hash: BlockHash::from_byte_array(hash_bytes),
+                height,
+            })
+        }
+    }
+
+    impl TryFrom<&[u8]> for ChainAnchor {
+        type Error = io::Error;
+        fn try_from(value: &[u8]) -> core::result::Result<Self, Self::Error> {
+            borsh::from_slice(value)
+        }
+    }
+
+    impl ChainAnchor {
+        pub fn to_vec(&self) -> Vec<u8> {
+            borsh::to_vec(self).expect("encodes chain anchor")
+        }
+    }
+}
+
+impl Ord for ChainAnchor {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.height.cmp(&other.height)
+    }
+}
+
+impl PartialOrd for ChainAnchor {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}

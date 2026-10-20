@@ -1,0 +1,9 @@
+Name: base58ck
+URL: https://crates.io/crates/base58ck
+Version: 0.1.101
+License: CC0-1.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Bitcoin base58 encoding with checksum.

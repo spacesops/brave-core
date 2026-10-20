@@ -1,0 +1,1 @@
+export { signSchnorr, verifySchnorr } from "@spacesprotocol/fabric-core/signing";

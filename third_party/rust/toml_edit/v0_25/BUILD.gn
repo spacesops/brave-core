@@ -1,0 +1,105 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "toml_edit"
+  epoch = "0.25"
+  crate_type = "rlib"
+  crate_root = "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/array.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/array_of_tables.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/de/array.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/de/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/de/key.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/de/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/de/table.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/de/table_enum.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/de/value.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/document.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/encode.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/index.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/inline_table.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/item.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/key.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/parser/array.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/parser/debug.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/parser/document.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/parser/inline_table.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/parser/key.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/parser/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/parser/value.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/raw_string.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/repr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/ser/array.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/ser/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/ser/key.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/ser/map.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/ser/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/ser/pretty.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/ser/value.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/table.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/value.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/visit.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/visit_mut.rs",
+  ]
+  inputs = [ "//brave/third_party/rust/chromium_crates_io/vendor/toml_edit-v0_25/src/../README.md" ]
+
+  build_native_rust_unit_tests = false
+  edition = "2024"
+  cargo_pkg_name = "toml_edit"
+  cargo_pkg_description = "Yet another format-preserving TOML parser."
+  cargo_pkg_repository = "https://github.com/toml-rs/toml"
+  cargo_pkg_version = "0.25.17+spec-1.1.0"
+
+  allow_unsafe = false
+
+  deps = [
+    "//brave/third_party/rust/indexmap/v2:lib",
+    "//brave/third_party/rust/toml_datetime/v1:lib",
+    "//brave/third_party/rust/toml_parser/v1:lib",
+    "//brave/third_party/rust/winnow/v1:lib",
+  ]
+  features = [ "parse" ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

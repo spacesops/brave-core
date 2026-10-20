@@ -1,0 +1,9 @@
+Name: malloc_buf
+URL: https://crates.io/crates/malloc_buf
+Version: 0.0.6
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Structs for handling malloc'd memory passed to Rust.

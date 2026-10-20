@@ -1,0 +1,10 @@
+Name: blake2
+URL: https://crates.io/crates/blake2
+Version: 0.10.6
+Revision: 1f727ce37ff40fa0cce84eb8543a45bdd3ca4a4e
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/blake2-v0_10/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: BLAKE2 hash functions

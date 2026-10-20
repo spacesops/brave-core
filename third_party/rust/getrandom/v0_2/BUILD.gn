@@ -55,7 +55,10 @@ cargo_crate("lib") {
   if (!is_win) {
     deps += [ "//brave/third_party/rust/libc/v0_2:lib" ]
   }
-  features = [ "std" ]
+  features = [
+    "custom",
+    "std",
+  ]
   rustenv = []
   rustflags = []
 

@@ -1,0 +1,9 @@
+Name: bitcoin_hashes
+URL: https://crates.io/crates/bitcoin_hashes
+Version: 0.14.101
+License: CC0-1.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Hash functions used by the rust-bitcoin eccosystem

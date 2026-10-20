@@ -1,0 +1,9 @@
+Name: bitcoin-io
+URL: https://crates.io/crates/bitcoin-io
+Version: 0.1.101
+License: CC0-1.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Simple I/O traits for no-std (and std) environments

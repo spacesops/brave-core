@@ -1,0 +1,61 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from `tools/crates/gnrt/removed_Cargo.toml.hbs`
+# by `tools/crates/run_gnrt.py vendor`. Do not edit!
+#
+# This is an empty placeholder that has replaced the
+# `proptest-1.12.0` crate.
+#
+# See `//tools/crates/gnrt/removed_crate.md` to learn more.
+
+[package]
+name = "proptest"
+version = "1.12.0"
+
+[package.metadata.gnrt]
+is_placeholder = true
+
+[features]
+"alloc" = []
+"atomic64bit" = []
+"attr-macro" = []
+"bit-set" = []
+"default" = []
+"default-code-coverage" = []
+"f16" = []
+"fork" = []
+"handle-panics" = []
+"hardware-rng" = []
+"no_std" = []
+"proptest-macro" = []
+"regex-syntax" = []
+"rusty-fork" = []
+"std" = []
+"tempfile" = []
+"timeout" = []
+"unstable" = []
+"x86" = []
+
+[dependencies.bitflags]
+version = "^2.10"
+default_features = false
+[dependencies.chacha20]
+version = "^0.10"
+default_features = false
+[dependencies.core_detect]
+version = "^1.0.0"
+default_features = false
+[dependencies.num-traits]
+version = "^0.2.15"
+default_features = false
+[dependencies.rand]
+version = "^0.10"
+default_features = false
+[dependencies.rand_xorshift]
+version = "^0.5"
+default_features = false
+[dependencies.unarray]
+version = "^0.1.4"
+default_features = false

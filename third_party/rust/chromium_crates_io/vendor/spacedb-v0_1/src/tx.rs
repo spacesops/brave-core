@@ -1,0 +1,1238 @@
+use crate::{
+    Error, Result,
+    path::{Direction, Path},
+    subtree::ValueOrHash,
+};
+
+use bincode::config;
+use core::marker::PhantomData;
+use std::{io, sync::MutexGuard};
+
+use crate::{
+    Hash, NodeHasher,
+    db::{CHUNK_SIZE, Database, EMPTY_RECORD, Record, SavePoint},
+    node::{Node, NodeInner},
+    path::{BitLength, PathUtils},
+    subtree::{SubTree, SubTreeNode},
+};
+
+use crate::{db::DatabaseHeader, fs::WriteBuffer};
+
+use crate::path::{PathSegment, PathSegmentInner};
+
+const BUFFER_SIZE: usize = 16 * 64 * 1024;
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum ProofType {
+    Standard,
+    Extended,
+}
+
+pub struct WriteTransaction<'db, H: NodeHasher> {
+    pub db: &'db Database<H>,
+    pub(crate) state: Option<Node>,
+    header: MutexGuard<'db, DatabaseHeader>,
+    metadata: Option<Vec<u8>>,
+}
+
+#[cfg(feature = "hash-idx")]
+use std::sync::{Arc, Mutex};
+
+#[cfg(feature = "hash-idx")]
+pub struct HashIndex {
+    conn: Arc<Mutex<rusqlite::Connection>>,
+}
+
+#[cfg(feature = "hash-idx")]
+impl Clone for HashIndex {
+    fn clone(&self) -> Self {
+        Self {
+            conn: self.conn.clone(),
+        }
+    }
+}
+
+#[cfg(not(feature = "hash-idx"))]
+#[derive(Clone)]
+pub struct HashIndex;
+
+#[derive(Clone)]
+pub struct ReadTransaction<H: NodeHasher> {
+    db: Database<H>,
+    savepoint: SavePoint,
+    cache: Cache,
+    hash_index: Option<HashIndex>,
+}
+
+#[derive(Clone)]
+pub struct Cache {
+    pub node: Option<Node>,
+    pub len: usize,
+    pub max_len: usize,
+}
+
+struct CacheEntry<'n> {
+    node: &'n mut Node,
+    clean: bool,
+}
+
+struct SubTreeNodeInfo {
+    node: SubTreeNode,
+    value_node: bool,
+}
+
+impl<H: NodeHasher> ReadTransaction<H> {
+    pub(crate) fn new(db: Database<H>, savepoint: SavePoint) -> Self {
+        let cache_size = db.config.cache_size;
+        let root = savepoint.root;
+
+        #[allow(unused_mut)]
+        let mut tx = Self {
+            db,
+            savepoint,
+            cache: Cache::new(root, cache_size),
+            hash_index: None,
+        };
+
+        #[cfg(feature = "hash-idx")]
+        {
+            let _ = tx.load_hash_index();
+        }
+
+        tx
+    }
+
+    pub fn iter(&self) -> KeyIterator<H> {
+        KeyIterator::new(self.db.clone(), self.savepoint.root)
+    }
+
+    pub fn rollback(&self) -> Result<()> {
+        let mut header = self.db.header.lock().expect("acquire lock");
+        header.savepoint = self.savepoint.clone();
+        self.db.write_header(&header)?;
+        self.db.file.set_len(header.len())?;
+        Database::<H>::cleanup_hash_indexes(&self.db.path, header.len());
+        Ok(())
+    }
+
+    pub fn metadata(&self) -> &[u8] {
+        match &self.savepoint.metadata {
+            None => &[],
+            Some(meta) => meta.as_slice(),
+        }
+    }
+
+    /// Returns the sidecar hash index path for the current snapshot.
+    #[cfg(feature = "hash-idx")]
+    fn hash_index_path(&self) -> Option<String> {
+        let db_path = self.db.path.as_ref()?;
+        let path = std::path::Path::new(db_path);
+        let stem = path.file_stem()?.to_str()?;
+        let parent = path.parent().unwrap_or(std::path::Path::new("."));
+        let idx_path = parent.join(format!(
+            "{}.{}.hidx.sqlite",
+            stem, self.savepoint.root.offset
+        ));
+        idx_path.to_str().map(|s| s.to_string())
+    }
+
+    /// Builds a hash index sidecar file for the current snapshot.
+    /// This precomputes all node hashes and stores them in a sqlite database,
+    /// so that future `prove()` and `compute_root()` calls can look up hashes
+    /// instead of recursively walking the tree.
+    #[cfg(feature = "hash-idx")]
+    pub fn build_hash_index(&mut self) -> Result<()> {
+        if self.is_empty() {
+            return Ok(());
+        }
+
+        let idx_path = self.hash_index_path().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::Unsupported,
+                "Cannot build hash index for in-memory database",
+            )
+        })?;
+
+        // Compute fingerprint: hash of root node's raw bytes
+        let root_raw = self.db.file.read(
+            self.savepoint.root.offset,
+            self.savepoint.root.size as usize,
+        )?;
+        let fingerprint = H::hash(&root_raw);
+
+        // Skip if a valid index already exists
+        if std::path::Path::new(&idx_path).exists() {
+            if let Ok(existing) = rusqlite::Connection::open_with_flags(
+                &idx_path,
+                rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY
+                    | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+            ) {
+                let stored: core::result::Result<Vec<u8>, _> =
+                    existing
+                        .query_row("SELECT fingerprint FROM meta LIMIT 1", [], |row| row.get(0));
+                if let Ok(stored) = stored {
+                    if stored.len() == 32 && stored == fingerprint {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        // Create the sqlite sidecar
+        let _ = std::fs::remove_file(&idx_path);
+        let conn = rusqlite::Connection::open(&idx_path).map_err(io::Error::other)?;
+
+        conn.execute_batch(
+            "PRAGMA journal_mode = OFF;
+             PRAGMA synchronous = OFF;
+             PRAGMA cache_size = -65536;
+             PRAGMA page_size = 4096;
+             CREATE TABLE hashes (offset INTEGER PRIMARY KEY, value BLOB NOT NULL) WITHOUT ROWID;
+             CREATE TABLE meta (fingerprint BLOB NOT NULL);",
+        )
+        .map_err(io::Error::other)?;
+
+        // Walk tree bottom-up, flushing in batches
+        let batch_size = 500_000;
+        let mut buffer: Vec<(u64, Hash)> = Vec::with_capacity(batch_size);
+
+        self.build_index_node(self.savepoint.root, &mut buffer, &conn, batch_size)?;
+
+        // Flush remaining
+        if !buffer.is_empty() {
+            Self::flush_index_batch(&buffer, &conn)?;
+        }
+
+        // Store fingerprint
+        conn.execute(
+            "INSERT INTO meta (fingerprint) VALUES (?1)",
+            [&fingerprint[..]],
+        )
+        .map_err(io::Error::other)?;
+
+        // Auto-load the index we just built
+        let _ = self.load_hash_index();
+
+        // Auto-prune old indexes
+        if let Some(keep) = self.db.config.hash_index_pruning {
+            self.db.prune_hash_indexes(keep);
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "hash-idx")]
+    fn flush_index_batch(buffer: &[(u64, Hash)], conn: &rusqlite::Connection) -> Result<()> {
+        conn.execute_batch("BEGIN").map_err(io::Error::other)?;
+        {
+            let mut stmt = conn
+                .prepare_cached("INSERT OR REPLACE INTO hashes (offset, value) VALUES (?1, ?2)")
+                .map_err(io::Error::other)?;
+            for (offset, v) in buffer {
+                stmt.execute(rusqlite::params![offset, &v[..]])
+                    .map_err(io::Error::other)?;
+            }
+        }
+        conn.execute_batch("COMMIT").map_err(io::Error::other)?;
+        Ok(())
+    }
+
+    #[cfg(feature = "hash-idx")]
+    fn build_index_node(
+        &self,
+        node_id: Record,
+        buffer: &mut Vec<(u64, Hash)>,
+        conn: &rusqlite::Connection,
+        batch_size: usize,
+    ) -> Result<Hash> {
+        let inner = self.db.load_node(node_id)?;
+        match inner {
+            NodeInner::Leaf { key, value } => {
+                let value_hash = H::hash(&value);
+                let hash = H::hash_leaf(&key.0, &value_hash);
+                buffer.push((node_id.offset, hash));
+                if buffer.len() >= batch_size {
+                    Self::flush_index_batch(buffer, conn)?;
+                    buffer.clear();
+                }
+                Ok(hash)
+            }
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => {
+                let left_hash = self.build_index_node(left.id, buffer, conn, batch_size)?;
+                let right_hash = self.build_index_node(right.id, buffer, conn, batch_size)?;
+                let hash = H::hash_internal(prefix.as_bytes(), &left_hash, &right_hash);
+                buffer.push((node_id.offset, hash));
+                if buffer.len() >= batch_size {
+                    Self::flush_index_batch(buffer, conn)?;
+                    buffer.clear();
+                }
+                Ok(hash)
+            }
+        }
+    }
+
+    /// Loads a previously built hash index sidecar for the current snapshot.
+    /// Returns `true` if a valid index was loaded, `false` if no index exists
+    /// or the fingerprint doesn't match (stale index).
+    #[cfg(feature = "hash-idx")]
+    pub fn load_hash_index(&mut self) -> Result<bool> {
+        if self.is_empty() {
+            return Ok(false);
+        }
+
+        let idx_path = match self.hash_index_path() {
+            Some(p) => p,
+            None => return Ok(false),
+        };
+
+        if !std::path::Path::new(&idx_path).exists() {
+            return Ok(false);
+        }
+
+        let conn = rusqlite::Connection::open_with_flags(
+            &idx_path,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        )
+        .map_err(io::Error::other)?;
+
+        // Validate fingerprint
+        let root_raw = self.db.file.read(
+            self.savepoint.root.offset,
+            self.savepoint.root.size as usize,
+        )?;
+        let expected_fingerprint = H::hash(&root_raw);
+
+        let stored: Vec<u8> = conn
+            .query_row("SELECT fingerprint FROM meta LIMIT 1", [], |row| row.get(0))
+            .map_err(io::Error::other)?;
+
+        if stored.len() != 32 || stored != expected_fingerprint {
+            return Ok(false);
+        }
+
+        self.hash_index = Some(HashIndex {
+            conn: Arc::new(Mutex::new(conn)),
+        });
+        Ok(true)
+    }
+
+    /// Exports the current snapshot to a new database file.
+    pub fn export(&self, path: &str) -> Result<()> {
+        use crate::db::{DatabaseHeader, HEADER_SIZE};
+        use crate::fs::FileBackend;
+        use std::fs::OpenOptions;
+
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)?;
+
+        let export_file: Box<dyn crate::fs::StorageBackend> = Box::new(FileBackend::new(file)?);
+
+        let header = DatabaseHeader::new();
+        export_file.set_len(HEADER_SIZE)?;
+        let header_bytes = header.serialize();
+        export_file.write(0, &header_bytes)?;
+        export_file.write(CHUNK_SIZE, &header_bytes)?;
+
+        let mut buffer: WriteBuffer<BUFFER_SIZE> = WriteBuffer::new(&export_file, HEADER_SIZE);
+
+        let new_root = if self.savepoint.root == EMPTY_RECORD {
+            EMPTY_RECORD
+        } else {
+            self.export_node(&mut buffer, self.savepoint.root)?
+        };
+
+        let empty_savepoint = SavePoint {
+            root: EMPTY_RECORD,
+            previous_savepoint: EMPTY_RECORD,
+            metadata: None,
+        };
+        let previous_savepoint = buffer.write_save_point(&empty_savepoint)?;
+        buffer.flush()?;
+        export_file.sync_data()?;
+
+        let final_savepoint = SavePoint {
+            root: new_root,
+            previous_savepoint,
+            metadata: self.savepoint.metadata.clone(),
+        };
+
+        let final_header = DatabaseHeader {
+            magic: header.magic,
+            version: header.version,
+            savepoint: final_savepoint,
+        };
+        let header_bytes = final_header.serialize();
+        export_file.write(0, &header_bytes)?;
+        export_file.write(CHUNK_SIZE, &header_bytes)?;
+        export_file.sync_data()?;
+
+        Ok(())
+    }
+
+    fn export_node<const SIZE: usize>(
+        &self,
+        buffer: &mut WriteBuffer<SIZE>,
+        record: Record,
+    ) -> Result<Record> {
+        use crate::node::NodeInner;
+
+        let inner = self.db.load_node(record)?;
+
+        match inner {
+            NodeInner::Leaf { key, value } => {
+                let mut node = Node::from_leaf(key, value);
+                Ok(buffer.write_node(&mut node)?)
+            }
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => {
+                let new_left = if left.id == EMPTY_RECORD {
+                    EMPTY_RECORD
+                } else {
+                    self.export_node(buffer, left.id)?
+                };
+
+                let new_right = if right.id == EMPTY_RECORD {
+                    EMPTY_RECORD
+                } else {
+                    self.export_node(buffer, right.id)?
+                };
+
+                let mut node = Node::from_internal(
+                    prefix,
+                    Box::new(Node::from_id(new_left)),
+                    Box::new(Node::from_id(new_right)),
+                );
+                Ok(buffer.write_node(&mut node)?)
+            }
+        }
+    }
+
+    pub fn get(&mut self, key: &Hash) -> Result<Option<Vec<u8>>> {
+        if self.is_empty() {
+            return Ok(None);
+        }
+
+        let mut node = self.cache.node.take().unwrap();
+        let result = Self::get_node(&self.db, &mut self.cache, &mut node, Path(key), 0);
+        self.cache.node = Some(node);
+        result
+    }
+
+    pub fn compute_root(&mut self) -> Result<Hash> {
+        if self.is_empty() {
+            return Ok(H::hash(&[]));
+        }
+
+        let mut n = self.cache.node.take().unwrap();
+        let h = {
+            let entry = Self::hash_node(&self.db, &mut self.cache, &mut n, &self.hash_index)?;
+            entry.node.hash_cache.unwrap()
+        };
+        self.cache.node = Some(n);
+        Ok(h)
+    }
+
+    pub fn prove(&mut self, keys: &[Hash], proof_type: ProofType) -> Result<SubTree<H>> {
+        if self.is_empty() {
+            return Ok(SubTree::<H>::empty());
+        }
+
+        let mut node = self.cache.node.take().unwrap();
+        let mut key_paths = keys.iter().map(Path).collect::<Vec<_>>();
+        key_paths.sort();
+
+        match Self::prove_nodes(
+            &self.db,
+            &mut self.cache,
+            &mut node,
+            key_paths.as_slice(),
+            0,
+            proof_type,
+            &self.hash_index,
+        ) {
+            Ok(info) => {
+                self.cache.node = Some(node);
+                Ok(SubTree::<H> {
+                    root: info.node,
+                    _marker: PhantomData::<H>,
+                })
+            }
+            Err(e) => {
+                self.cache.node = Some(node);
+                Err(e)
+            }
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.savepoint.root == EMPTY_RECORD
+    }
+
+    /// Returns the root node's file offset for this snapshot.
+    pub fn root_offset(&self) -> u64 {
+        self.savepoint.root.offset
+    }
+
+    fn prove_nodes(
+        db: &Database<H>,
+        cache: &mut Cache,
+        node: &mut Node,
+        keys: &[Path<&Hash>],
+        depth: usize,
+        proof_type: ProofType,
+        hash_index: &Option<HashIndex>,
+    ) -> Result<SubTreeNodeInfo> {
+        let entry = cache.load_node(db, node)?;
+        match entry.node.inner.as_mut().unwrap() {
+            NodeInner::Leaf {
+                key: node_key,
+                value,
+            } => {
+                let include_value = keys.iter().any(|k| *k.0 == node_key.0);
+                let value_or_hash = if include_value {
+                    ValueOrHash::Value(value.clone())
+                } else {
+                    ValueOrHash::Hash(H::hash(value))
+                };
+                Ok(SubTreeNodeInfo {
+                    node: SubTreeNode::Leaf {
+                        key: *node_key,
+                        value_or_hash,
+                    },
+                    value_node: include_value,
+                })
+            }
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => {
+                // Exclude keys that are not in this subtree. Sorted keys that
+                // diverge below the prefix come before the matching band, ones
+                // that diverge above come after — trim both sides.
+                let start = keys.partition_point(|key| {
+                    key.split_point(depth, *prefix)
+                        .is_some_and(|p| key.direction(depth + p) == Direction::Left)
+                });
+                let end = keys.partition_point(|key| {
+                    key.split_point(depth, *prefix)
+                        .is_none_or(|p| key.direction(depth + p) == Direction::Left)
+                });
+                let keys = &keys[start..end];
+
+                // Keys are split based on their direction at the current depth.
+                let depth = depth + prefix.bit_len();
+
+                let split = keys.partition_point(|key| key.direction(depth) == Direction::Left);
+                let (left_keys, right_keys) = keys.split_at(split);
+
+                let mut left_subtree = if left_keys.is_empty() {
+                    None
+                } else {
+                    Some(Self::prove_nodes(
+                        db,
+                        cache,
+                        left,
+                        left_keys,
+                        depth + 1,
+                        proof_type,
+                        hash_index,
+                    )?)
+                };
+                let mut right_subtree = if right_keys.is_empty() {
+                    None
+                } else {
+                    Some(Self::prove_nodes(
+                        db,
+                        cache,
+                        right,
+                        right_keys,
+                        depth + 1,
+                        proof_type,
+                        hash_index,
+                    )?)
+                };
+
+                // Include extended hash of the sibling if its subtree isn't already part of the proof
+                if proof_type == ProofType::Extended
+                    && left_subtree.is_none()
+                    && right_subtree.is_some()
+                    && right_subtree.as_ref().unwrap().value_node
+                {
+                    left_subtree = Some(SubTreeNodeInfo {
+                        node: Self::hash_node_extended(db, cache, left, hash_index)?,
+                        value_node: false,
+                    })
+                }
+                if proof_type == ProofType::Extended
+                    && right_subtree.is_none()
+                    && left_subtree.is_some()
+                    && left_subtree.as_ref().unwrap().value_node
+                {
+                    right_subtree = Some(SubTreeNodeInfo {
+                        node: Self::hash_node_extended(db, cache, right, hash_index)?,
+                        value_node: false,
+                    })
+                }
+
+                // If extended hashes aren't needed, include basic ones
+                if left_subtree.is_none() {
+                    let left_entry = Self::hash_node(db, cache, left, hash_index)?;
+                    let left_hash = left_entry.node.hash_cache.unwrap();
+                    left_subtree = Some(SubTreeNodeInfo {
+                        node: SubTreeNode::Hash(left_hash),
+                        value_node: false,
+                    });
+                }
+                if right_subtree.is_none() {
+                    let right_entry = Self::hash_node(db, cache, right, hash_index)?;
+                    let right_hash = right_entry.node.hash_cache.unwrap();
+                    right_subtree = Some(SubTreeNodeInfo {
+                        node: SubTreeNode::Hash(right_hash),
+                        value_node: false,
+                    });
+                }
+
+                // if left and right subtrees are value leafs, we need to include the sibling of this node
+                let value_node = left_subtree.as_ref().unwrap().value_node
+                    && right_subtree.as_ref().unwrap().value_node;
+
+                Ok(SubTreeNodeInfo {
+                    node: SubTreeNode::Internal {
+                        prefix: *prefix,
+                        left: Box::new(left_subtree.unwrap().node),
+                        right: Box::new(right_subtree.unwrap().node),
+                    },
+                    value_node,
+                })
+            }
+        }
+    }
+
+    // `hash_index` is read directly only under the `hash-idx` feature;
+    // without it, clippy sees a recursion-only parameter.
+    #[cfg_attr(not(feature = "hash-idx"), allow(clippy::only_used_in_recursion))]
+    fn hash_node<'c>(
+        db: &Database<H>,
+        cache: &mut Cache,
+        node: &'c mut Node,
+        hash_index: &Option<HashIndex>,
+    ) -> Result<CacheEntry<'c>> {
+        if node.hash_cache.is_some() {
+            return Ok(CacheEntry::new(node, false));
+        }
+
+        // Check hash index sidecar before loading/recursing
+        #[cfg(feature = "hash-idx")]
+        if node.id != EMPTY_RECORD {
+            if let Some(idx) = hash_index {
+                let conn = idx.conn.lock().expect("hash index lock");
+                let result: core::result::Result<Vec<u8>, _> = conn.query_row(
+                    "SELECT value FROM hashes WHERE offset = ?1",
+                    [node.id.offset as i64],
+                    |row| row.get(0),
+                );
+                if let Ok(cached) = result {
+                    if cached.len() == 32 {
+                        let mut hash = [0u8; 32];
+                        hash.copy_from_slice(&cached);
+                        node.hash_cache = Some(hash);
+                        return Ok(CacheEntry::new(node, false));
+                    }
+                }
+            }
+        }
+
+        let entry = cache.load_node(db, node)?;
+        match entry.node.inner.as_mut().unwrap() {
+            NodeInner::Leaf { key, value } => {
+                let hash = H::hash(value);
+                entry.node.hash_cache = Some(H::hash_leaf(&key.0, &hash));
+            }
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => {
+                let left_entry = Self::hash_node(db, cache, left, hash_index)?;
+                let left_hash = left_entry.node.hash_cache.as_ref().unwrap();
+                let right_entry = Self::hash_node(db, cache, right, hash_index)?;
+                let right_hash = right_entry.node.hash_cache.as_ref().unwrap();
+                entry.node.hash_cache =
+                    Some(H::hash_internal(prefix.as_bytes(), left_hash, right_hash));
+            }
+        }
+        Ok(entry)
+    }
+
+    /// Creates an extended hash of a node
+    /// For internal nodes, it would be the prefix value, left and right hashes.
+    /// For leaf nodes, it's the key and value hashes.
+    ///
+    /// Note: This is different from regular hashing as it converts a [Node] into either
+    /// a [SubTreeNode::Internal] or [SubTreeNode::Leaf]
+    /// while `hash_node` converts any [Node] into a [SubTreeNode::Hash]
+    fn hash_node_extended(
+        db: &Database<H>,
+        cache: &mut Cache,
+        node: &mut Node,
+        hash_index: &Option<HashIndex>,
+    ) -> Result<SubTreeNode> {
+        let entry = cache.load_node(db, node)?;
+        match entry.node.inner.as_mut().unwrap() {
+            NodeInner::Leaf { key, value } => {
+                let hash = H::hash(value);
+                Ok(SubTreeNode::Leaf {
+                    key: *key,
+                    value_or_hash: ValueOrHash::Hash(hash),
+                })
+            }
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => {
+                let left_hash = *Self::hash_node(db, cache, left, hash_index)?
+                    .node
+                    .hash_cache
+                    .as_ref()
+                    .unwrap();
+                let right_hash = *Self::hash_node(db, cache, right, hash_index)?
+                    .node
+                    .hash_cache
+                    .as_ref()
+                    .unwrap();
+                Ok(SubTreeNode::Internal {
+                    prefix: *prefix,
+                    left: Box::new(SubTreeNode::Hash(left_hash)),
+                    right: Box::new(SubTreeNode::Hash(right_hash)),
+                })
+            }
+        }
+    }
+
+    fn get_node(
+        db: &Database<H>,
+        cache: &mut Cache,
+        node: &mut Node,
+        key: Path<&Hash>,
+        depth: usize,
+    ) -> Result<Option<Vec<u8>>> {
+        let entry = cache.load_node(db, node)?;
+        match entry.node.inner.as_mut().unwrap() {
+            NodeInner::Leaf {
+                value,
+                key: node_key,
+            } => {
+                if node_key.0 == *key.0 {
+                    return Ok(Some(value.clone()));
+                }
+                Ok(None)
+            }
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => {
+                if key.split_point(depth, *prefix).is_some() {
+                    return Ok(None);
+                }
+                let depth = depth + prefix.bit_len();
+                match key.direction(depth) {
+                    Direction::Right => Self::get_node(db, cache, right, key, depth + 1),
+                    Direction::Left => Self::get_node(db, cache, left, key, depth + 1),
+                }
+            }
+        }
+    }
+}
+
+impl<'db, H: NodeHasher> WriteTransaction<'db, H> {
+    pub(crate) fn new(db: &'db Database<H>) -> Self {
+        let head = db.header.lock().unwrap();
+        let state = if head.savepoint.root == EMPTY_RECORD {
+            None
+        } else {
+            Some(Node::from_id(head.savepoint.root))
+        };
+
+        Self {
+            db,
+            state,
+            header: head,
+            metadata: None,
+        }
+    }
+
+    pub fn metadata(&mut self, metadata: Vec<u8>) -> Result<()> {
+        if metadata.len() > 512 {
+            return Err(io::Error::other("metadata must not exceed 512 bytes").into());
+        }
+
+        self.metadata = Some(metadata);
+        Ok(())
+    }
+
+    pub fn insert(mut self, key: Hash, value: Vec<u8>) -> Result<Self> {
+        if self.state.is_none() {
+            self.state = Some(Node::from_leaf(Path(key), value));
+            return Ok(self);
+        }
+
+        let mut state = self.state.take().unwrap();
+        state = self.insert_into_node(state, Path(key), value, 0)?;
+        self.state = Some(state);
+        Ok(self)
+    }
+
+    pub fn delete(mut self, key: Hash) -> Result<Self> {
+        if self.state.is_none() {
+            return Ok(self);
+        }
+
+        let state = self.state.take().unwrap();
+        self.state = self.delete_node(state, Path(key), 0)?;
+        Ok(self)
+    }
+
+    fn insert_into_node(
+        &mut self,
+        node: Node,
+        key: Path<Hash>,
+        value: Vec<u8>,
+        depth: usize,
+    ) -> Result<Node> {
+        let inner = self.read_inner(node)?;
+        match inner {
+            NodeInner::Leaf {
+                key: node_key,
+                value: node_value,
+            } => self.insert_leaf(node_key, node_value, key, value, depth),
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => self.insert_internal(prefix, left, right, key, value, depth),
+        }
+    }
+
+    #[inline]
+    fn insert_internal(
+        &mut self,
+        prefix: PathSegment<PathSegmentInner>,
+        left: Box<Node>,
+        right: Box<Node>,
+        key: Path<Hash>,
+        value: Vec<u8>,
+        depth: usize,
+    ) -> Result<Node> {
+        let point = key.split_point(depth, prefix);
+        if point.is_none() {
+            let depth = depth + prefix.bit_len();
+            // Traverse further based on the direction
+            return match key.direction(depth) {
+                Direction::Right => {
+                    let new_node =
+                        Box::new(self.insert_into_node(*right, key, value, depth + 1)?);
+                    Ok(Node::from_internal(prefix, left, new_node))
+                }
+                Direction::Left => {
+                    let new_node = Box::new(self.insert_into_node(*left, key, value, depth + 1)?);
+                    Ok(Node::from_internal(prefix, new_node, right))
+                }
+            };
+        }
+
+        // A split point exists: compress common path into an internal node
+        let point = point.unwrap();
+
+        // Prefix paths are relative to the depth
+        // Parent will be from 0th bit of the prefix (inclusive) to split point (exclusive)
+        let parent_prefix = PathSegment::from_path(prefix, 0, point);
+
+        // Since current node is going down one level, we need to copy from split point+1 i.e. skipping 1 bit.
+        let prefix = PathSegment::from_path(prefix, point + 1, prefix.bit_len());
+
+        let current_node = Node::from_internal(prefix, left, right);
+        let new_node = Node::from_leaf(key, value);
+
+        let depth = depth + parent_prefix.bit_len();
+        let (left, right) = match key.direction(depth) {
+            Direction::Right => (current_node, new_node),
+            Direction::Left => (new_node, current_node),
+        };
+
+        Ok(Node::from_internal(
+            parent_prefix,
+            Box::new(left),
+            Box::new(right),
+        ))
+    }
+
+    #[inline]
+    fn insert_leaf(
+        &mut self,
+        current_key: Path<Hash>,
+        current_value: Vec<u8>,
+        key: Path<Hash>,
+        value: Vec<u8>,
+        depth: usize,
+    ) -> Result<Node> {
+        // Same key: update value
+        if current_key == key {
+            return Ok(Node::from_leaf(key, value));
+        }
+
+        // A split point must exist: compress common path into an internal node
+        let point = current_key.split_point(0, key).unwrap();
+        let prefix = PathSegment::from_path(current_key, depth, point);
+
+        let depth = depth + prefix.bit_len();
+        let node_direction = key.direction(depth);
+        let current_node = Node::from_leaf(current_key, current_value);
+        let node = Node::from_leaf(key, value);
+
+        let (left, right) = match node_direction {
+            Direction::Right => (current_node, node),
+            Direction::Left => (node, current_node),
+        };
+
+        Ok(Node::from_internal(prefix, Box::new(left), Box::new(right)))
+    }
+
+    fn delete_node(&mut self, node: Node, key: Path<Hash>, depth: usize) -> Result<Option<Node>> {
+        let inner = self.read_inner(node)?;
+        match inner {
+            NodeInner::Leaf {
+                key: node_key,
+                value,
+            } => {
+                if node_key != key {
+                    let node = Node::from_leaf(node_key, value);
+                    return Ok(Some(node));
+                }
+                Ok(None)
+            }
+            NodeInner::Internal {
+                prefix,
+                left,
+                right,
+            } => {
+                let depth = depth + prefix.bit_len();
+                // Traverse further based on the direction
+                match key.direction(depth) {
+                    Direction::Right => {
+                        let right_subtree = self.delete_node(*right, key, depth + 1)?;
+                        match right_subtree {
+                            None => {
+                                // Right subtree was deleted, move left subtree up
+                                let left_subtree = self.read_inner(*left)?;
+                                Ok(Some(self.lift_node(prefix, left_subtree, Direction::Left)))
+                            }
+                            Some(right_subtree) => Ok(Some(Node::from_internal(
+                                prefix,
+                                left,
+                                Box::new(right_subtree),
+                            ))),
+                        }
+                    }
+                    Direction::Left => {
+                        let left_subtree = self.delete_node(*left, key, depth + 1)?;
+                        match left_subtree {
+                            None => {
+                                // Left subtree was deleted, move right subtree up
+                                let right_subtree = self.read_inner(*right)?;
+                                Ok(Some(self.lift_node(
+                                    prefix,
+                                    right_subtree,
+                                    Direction::Right,
+                                )))
+                            }
+                            Some(left_subtree) => Ok(Some(Node::from_internal(
+                                prefix,
+                                Box::new(left_subtree),
+                                right,
+                            ))),
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[inline(always)]
+    fn lift_node(
+        &self,
+        mut parent_prefix: PathSegment<PathSegmentInner>,
+        node: NodeInner,
+        direction: Direction,
+    ) -> Node {
+        match node {
+            NodeInner::Leaf {
+                key: leaf_key,
+                value: leaf_value,
+            } => Node::from_leaf(leaf_key, leaf_value),
+            NodeInner::Internal {
+                prefix: child_prefix,
+                left: child_left,
+                right: child_right,
+            } => {
+                // Since this node is being lifted one level append a single bit
+                // based on its direction
+                match direction {
+                    Direction::Left => parent_prefix.extend_from_byte(0, 1),
+                    Direction::Right => parent_prefix.extend_from_byte(0b1000_0000, 1),
+                }
+
+                // Extend the parent's prefix with the node prefix being lifted
+                parent_prefix.extend(child_prefix);
+                Node::from_internal(parent_prefix, child_left, child_right)
+            }
+        }
+    }
+
+    fn read_inner(&self, node: Node) -> Result<NodeInner> {
+        Ok(match node.inner {
+            Some(node) => node,
+            None => {
+                if node.id == EMPTY_RECORD {
+                    return Err(io::Error::new(io::ErrorKind::NotFound, "Node not found").into());
+                }
+                let raw = self.db.file.read(node.id.offset, node.id.size as usize)?;
+                let config = config::standard();
+                let (inner, _): (NodeInner, usize) =
+                    bincode::decode_from_slice(&raw, config).unwrap();
+                inner
+            }
+        })
+    }
+
+    fn write_all(&mut self, buf: &mut WriteBuffer<BUFFER_SIZE>, node: &mut Node) -> Result<Record> {
+        match &mut node.inner {
+            Some(NodeInner::Leaf { .. }) => {
+                node.id = buf.write_node(node)?;
+            }
+            Some(NodeInner::Internal { left, right, .. }) => {
+                self.write_all(buf, left)?;
+                self.write_all(buf, right)?;
+                node.id = buf.write_node(node)?;
+            }
+            None => {
+                if node.id != EMPTY_RECORD {
+                    return Ok(node.id);
+                }
+                return Err(Error::from(io::ErrorKind::NotFound));
+            }
+        }
+
+        Ok(node.id)
+    }
+
+    pub fn commit(mut self) -> Result<()> {
+        if self.state.is_none() && self.metadata.is_none() {
+            return Ok(());
+        }
+
+        let write_len = self.header.len();
+        assert_eq!(
+            write_len % CHUNK_SIZE,
+            0,
+            "Database length is not a multiple of chunk size {}",
+            write_len
+        );
+
+        let file_length = self.db.file.len()?;
+        if file_length != write_len {
+            // truncate/extend file to expected length
+            self.db.file.set_len(write_len)?;
+        }
+
+        let mut buf: WriteBuffer<BUFFER_SIZE> = WriteBuffer::new(&self.db.file, file_length);
+
+        let root = match self.state.take() {
+            None => self.header.savepoint.root,
+            Some(mut state) => self.write_all(&mut buf, &mut state)?,
+        };
+
+        let previous_savepoint = buf.write_save_point(&self.header.savepoint)?;
+        buf.flush()?;
+        self.db.file.sync_data()?;
+
+        self.header.savepoint = SavePoint {
+            root,
+            previous_savepoint,
+            metadata: self.metadata,
+        };
+
+        self.db.write_header(&self.header)?;
+
+        #[cfg(feature = "hash-idx")]
+        if self.db.config.auto_hash_index {
+            let mut snapshot = ReadTransaction::new(self.db.clone(), self.header.savepoint.clone());
+            let _ = snapshot.build_hash_index();
+        }
+
+        Ok(())
+    }
+}
+
+pub struct KeyIterator<H: NodeHasher> {
+    db: Database<H>,
+    stack: Vec<Record>,
+}
+
+impl<H: NodeHasher> KeyIterator<H> {
+    fn new(db: Database<H>, root: Record) -> Self {
+        let stack = vec![root];
+        Self { db, stack }
+    }
+}
+
+impl<H: NodeHasher> Iterator for KeyIterator<H> {
+    type Item = Result<(Hash, Vec<u8>)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let record = self.stack.pop()?;
+        if record == EMPTY_RECORD {
+            return None;
+        }
+
+        match self.db.load_node(record) {
+            Ok(inner) => match inner {
+                NodeInner::Leaf { key, value } => Some(Ok((key.0, value))),
+                NodeInner::Internal { left, right, .. } => {
+                    self.stack.push(left.id);
+                    self.stack.push(right.id);
+                    self.next()
+                }
+            },
+            Err(e) => Some(Err(e)),
+        }
+    }
+}
+
+impl<'n> CacheEntry<'n> {
+    fn new(node: &'n mut Node, clean: bool) -> Self {
+        Self { node, clean }
+    }
+}
+
+impl Drop for CacheEntry<'_> {
+    fn drop(&mut self) {
+        if self.clean {
+            self.node.inner = None;
+        }
+    }
+}
+
+impl Cache {
+    fn new(record: Record, capacity: usize) -> Self {
+        Self {
+            node: Some(Node::from_id(record)),
+            len: 0,
+            max_len: capacity,
+        }
+    }
+
+    fn is_full(&self) -> bool {
+        self.len > self.max_len
+    }
+
+    fn load_node<'c, H: NodeHasher>(
+        &mut self,
+        db: &Database<H>,
+        node: &'c mut Node,
+    ) -> Result<CacheEntry<'c>> {
+        if node.inner.is_some() {
+            return Ok(CacheEntry { node, clean: false });
+        }
+        assert_ne!(node.id, EMPTY_RECORD, "Attempted to read empty record");
+        let is_full = self.is_full();
+
+        let inner = db.load_node(node.id)?;
+
+        let empty_len = node.mem_size();
+        node.inner = Some(inner);
+        let new_len = node.mem_size();
+        if !is_full {
+            self.len += new_len - empty_len;
+        }
+
+        Ok(CacheEntry {
+            node,
+            clean: is_full,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db::Database;
+    use crate::subtree::SubTreeNode;
+    use crate::tx::ProofType;
+
+    #[test]
+    fn test_extended_proofs() {
+        let db = Database::memory().unwrap();
+        let tx = db.begin_write().unwrap();
+        tx.insert([0b1000_0000u8; 32], vec![1])
+            .unwrap()
+            .insert([0b1100_0000u8; 32], vec![2])
+            .unwrap()
+            .insert([0b0000_0000u8; 32], vec![3])
+            .unwrap()
+            .commit()
+            .unwrap();
+
+        let mut snapshot = db.begin_read().unwrap();
+        let standard_subtree = snapshot.prove(&[[0u8; 32]], ProofType::Standard).unwrap();
+
+        match standard_subtree.root {
+            SubTreeNode::Internal { left, right, .. } => {
+                assert!(left.is_value_leaf(), "expected a value leaf on left");
+                assert!(
+                    matches!(*right, SubTreeNode::Hash(_)),
+                    "expected a hash node on the right"
+                );
+            }
+            _ => panic!("invalid result"),
+        }
+
+        let extended_subtree = snapshot.prove(&[[0u8; 32]], ProofType::Extended).unwrap();
+        match extended_subtree.root {
+            SubTreeNode::Internal { left, right, .. } => {
+                assert!(left.is_value_leaf(), "expected a value leaf on left");
+                // Extended proof includes the sibling with terminal child hashes if any
+                match *right {
+                    SubTreeNode::Internal {
+                        left: left_left,
+                        right: left_right,
+                        ..
+                    } => {
+                        assert!(
+                            matches!(*left_left, SubTreeNode::Hash(_)),
+                            "expected a hash node"
+                        );
+                        assert!(
+                            matches!(*left_right, SubTreeNode::Hash(_)),
+                            "expected a hash node"
+                        );
+                    }
+                    _ => panic!("expected internal node"),
+                }
+            }
+            _ => panic!("invalid result"),
+        }
+    }
+}

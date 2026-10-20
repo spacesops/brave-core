@@ -1,0 +1,10 @@
+Name: objc
+URL: https://crates.io/crates/objc
+Version: 0.2.7
+Revision: 858f92f7c11deb4cd95fe8c8b58ff8e1a6758f5e
+License: MIT
+License File: //brave/third_party/rust/chromium_crates_io/vendor/objc-v0_2/LICENSE.txt
+Shipped: yes
+Security Critical: yes
+
+Description: Objective-C Runtime bindings and wrapper for Rust.

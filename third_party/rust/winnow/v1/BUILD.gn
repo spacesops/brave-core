@@ -1,0 +1,137 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "winnow"
+  epoch = "1"
+  crate_type = "rlib"
+  crate_root =
+      "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/arithmetic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/fromstr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/http.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/ini.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/json.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/language.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/lexing.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/nom.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/partial.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/performance.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/s_expression.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/stream.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_topic/why.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_0.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_1.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_2.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_3.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_4.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_5.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_6.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_7.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/chapter_8.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/_tutorial/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/ascii/caseless.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/ascii/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/ascii/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/binary/bits/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/binary/bits/stream.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/binary/bits/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/binary/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/binary/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/branch.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/core.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/debug/internals.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/debug/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/expression.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/impls.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/multi.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/sequence.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/combinator/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/macros/dispatch.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/macros/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/macros/seq.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/macros/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/macros/unordered_seq.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/parser.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/bstr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/bytes.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/locating.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/partial.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/range.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/recoverable.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/stateful.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/stream/token.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/token/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/token/tests.rs",
+  ]
+  inputs = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/../examples/css/main.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/winnow-v1/src/../examples/css/parser.rs",
+  ]
+
+  build_native_rust_unit_tests = false
+  edition = "2021"
+  cargo_pkg_name = "winnow"
+  cargo_pkg_description =
+      "A byte-oriented, zero-copy, parser combinators library"
+  cargo_pkg_repository = "https://github.com/winnow-rs/winnow"
+  cargo_pkg_version = "1.0.4"
+
+  allow_unsafe = true
+
+  features = [
+    "alloc",
+    "ascii",
+    "binary",
+    "default",
+    "parser",
+    "std",
+  ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

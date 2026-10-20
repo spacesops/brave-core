@@ -1,0 +1,11 @@
+Name: borsh-derive
+URL: https://crates.io/crates/borsh-derive
+Version: 1.8.1
+Revision: fe778bec428d5b44cd4922c896af0a7c39a863dd
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/borsh-derive-v1/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: Binary Object Representation Serializer for Hashing
+

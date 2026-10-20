@@ -1,0 +1,132 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "risc0_zkp"
+  epoch = "3"
+  crate_type = "rlib"
+  crate_root = "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/adapter.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/digest.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/blake2b.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/poseidon2/consts.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/poseidon2/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/poseidon2/rng.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/poseidon_254/consts.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/poseidon_254/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/sha/cpu.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/sha/guest.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/sha/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/sha/rng.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/hash/sha/rust_crypto.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/ntt.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/core/poly.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/hal/cpu.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/hal/cuda.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/hal/dual.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/hal/metal.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/hal/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/layout.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/merkle.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/prove/fri.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/prove/merkle.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/prove/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/prove/poly_group.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/prove/prover.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/prove/soundness.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/prove/write_iop.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/taps.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/verify/fri.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/verify/merkle.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/verify/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/verify/read_iop.rs",
+  ]
+  inputs = [ "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkp-v3/src/../README.md" ]
+
+  build_native_rust_unit_tests = false
+  edition = "2021"
+  cargo_pkg_name = "risc0-zkp"
+  cargo_pkg_description = "RISC Zero zero-knowledge proof system core crate"
+  cargo_pkg_repository = "https://github.com/risc0/risc0/"
+  cargo_pkg_version = "3.0.5"
+
+  allow_unsafe = true
+
+  deps = [
+    "//brave/third_party/rust/anyhow/v1:lib",
+    "//brave/third_party/rust/blake2/v0_10:lib",
+    "//brave/third_party/rust/borsh/v1:lib",
+    "//brave/third_party/rust/bytemuck/v1:lib",
+    "//brave/third_party/rust/cfg_if/v1:lib",
+    "//brave/third_party/rust/digest/v0_10:lib",
+    "//brave/third_party/rust/hex/v0_4:lib",
+    "//brave/third_party/rust/hex_literal/v0_4:lib",
+    "//brave/third_party/rust/paste/v1:lib",
+    "//brave/third_party/rust/rand_core/v0_9:lib",
+    "//brave/third_party/rust/risc0_core/v3:lib",
+    "//brave/third_party/rust/risc0_zkvm_platform/v2:lib",
+    "//brave/third_party/rust/serde/v1:lib",
+    "//brave/third_party/rust/sha2/v0_10:lib",
+    "//brave/third_party/rust/stability/v0_2:lib",
+    "//brave/third_party/rust/tracing/v0_1:lib",
+  ]
+  if (rust_abi_target == "aarch64-apple-darwin" ||
+      rust_abi_target == "aarch64-apple-ios" ||
+      rust_abi_target == "aarch64-apple-ios-macabi" ||
+      rust_abi_target == "aarch64-apple-ios-sim" ||
+      rust_abi_target == "arm64e-apple-ios" ||
+      rust_abi_target == "armv7s-apple-ios" ||
+      rust_abi_target == "i386-apple-ios" ||
+      rust_abi_target == "x86_64-apple-darwin" ||
+      rust_abi_target == "x86_64-apple-ios" ||
+      rust_abi_target == "x86_64-apple-ios-macabi") {
+    deps += [ "//brave/third_party/rust/metal/v0_29:lib" ]
+  }
+  features = [
+    "default",
+    "std",
+  ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

@@ -1,0 +1,10 @@
+Name: elf
+URL: https://crates.io/crates/elf
+Version: 0.7.4
+Revision: 94d6780552465ebdc3d732f4a32d6bd00f1b8d70
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/elf-v0_7/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: A pure-rust library for parsing ELF files

@@ -1,0 +1,1311 @@
+use bitcoin::hashes::Hash as BitcoinHash;
+use bitcoin::key::Keypair;
+use bitcoin::key::rand::Rng;
+use bitcoin::secp256k1::Secp256k1;
+use bitcoin::secp256k1::rand;
+use bitcoin::{BlockHash, OutPoint, ScriptBuf, Txid};
+use borsh::{BorshDeserialize, BorshSerialize};
+use libveritas::cert::{
+    Certificate, HandleOut, HandleSubtree, KeyHash, NumsSubtree, Signature, SpacesSubtree, Witness,
+};
+use libveritas::msg::{self, Message, QueryContext};
+use libveritas::{ProvableOption, SovereigntyState, Veritas, Zone, hash_signable_message};
+use risc0_zkvm::{FakeReceipt, InnerReceipt, Receipt, ReceiptClaim};
+use spacedb::Sha256Hasher;
+use spacedb::subtree::{ProofType, SubTree, ValueOrHash};
+use spaces_nums::constants::COMMITMENT_FINALITY_INTERVAL;
+use spaces_nums::num_id::NumId;
+use spaces_nums::snumeric::SNumeric;
+use spaces_nums::{
+    CommitmentKey, CommitmentTipKey, DelegatorKey, FullNumOut, Num, NumOut, NumOutpointKey,
+    RootAnchor, rolling_hash,
+};
+use spaces_protocol::constants::ChainAnchor;
+use spaces_protocol::hasher::{KeyHasher, OutpointKey, SpaceKey};
+use spaces_protocol::slabel::SLabel;
+use spaces_protocol::sname::{SName, Subname};
+use spaces_protocol::{Covenant, FullSpaceOut, Space, SpaceOut};
+use std::collections::HashMap;
+use std::str::FromStr;
+
+fn sname(s: &str) -> SName {
+    SName::from_str(s).unwrap()
+}
+
+fn slabel(s: &str) -> SLabel {
+    SLabel::from_str(s).unwrap()
+}
+
+fn label(s: &str) -> Subname {
+    Subname::from_str(s).unwrap()
+}
+
+fn sign_zone(zone: &Zone, keypair: &Keypair) -> Signature {
+    let msg = hash_signable_message(&zone.signing_bytes());
+    let secp = Secp256k1::new();
+    let sig = secp.sign_schnorr_no_aux_rand(&msg, keypair);
+    Signature(sig.serialize())
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct EncodableOutpoint(
+    #[borsh(
+        serialize_with = "borsh_utils::serialize_outpoint",
+        deserialize_with = "borsh_utils::deserialize_outpoint"
+    )]
+    pub OutPoint,
+);
+
+fn gen_p2tr_spk() -> (ScriptBuf, Keypair) {
+    use bitcoin::opcodes::all::OP_PUSHNUM_1;
+    use bitcoin::script::Builder;
+
+    let secp = Secp256k1::new();
+    let (secret_key, public_key) = secp.generate_keypair(&mut rand::thread_rng());
+    let keypair = Keypair::from_secret_key(&secp, &secret_key);
+    let (xonly, _parity) = public_key.x_only_public_key();
+
+    // Build witness v1 script with untweaked pubkey (no taproot tweak)
+    let script = Builder::new()
+        .push_opcode(OP_PUSHNUM_1)
+        .push_slice(xonly.serialize())
+        .into_script();
+
+    (script, keypair)
+}
+
+#[derive(Clone)]
+pub struct TestSpace {
+    pub fso: FullSpaceOut,
+    pub keypair: Keypair,
+}
+
+#[derive(Clone)]
+pub struct TestNum {
+    pub fso: FullNumOut,
+    pub keypair: Keypair,
+}
+
+impl TestSpace {
+    pub fn new(name: &str, block_height: u32) -> Self {
+        let mut rng = rand::thread_rng();
+        let mut txid_bytes = [0u8; 32];
+        rng.fill(&mut txid_bytes);
+
+        let txid = Txid::from_slice(&txid_bytes).expect("valid txid");
+        let n: u32 = rng.r#gen();
+        let (script_pubkey, keypair) = gen_p2tr_spk();
+
+        let fso = FullSpaceOut {
+            txid,
+            spaceout: SpaceOut {
+                n: n as usize,
+                space: Some(Space {
+                    name: slabel(name),
+                    covenant: Covenant::Transfer {
+                        expire_height: block_height + spaces_protocol::constants::RENEWAL_INTERVAL,
+                        data: None,
+                    },
+                }),
+                value: Default::default(),
+                script_pubkey,
+            },
+        };
+
+        TestSpace { fso, keypair }
+    }
+
+    pub fn label(&self) -> SLabel {
+        self.fso
+            .spaceout
+            .space
+            .as_ref()
+            .expect("valid space")
+            .name
+            .clone()
+    }
+
+    pub fn outpoint_key(&self) -> OutpointKey {
+        OutpointKey::from_outpoint::<KeyHash>(self.fso.outpoint())
+    }
+
+    pub fn script_pubkey(&self) -> ScriptBuf {
+        self.fso.spaceout.script_pubkey.clone()
+    }
+
+    pub fn space_key(&self) -> SpaceKey {
+        SpaceKey::from(KeyHash::hash(self.label().as_ref()))
+    }
+
+    pub fn spaceout_bytes(&self) -> Vec<u8> {
+        borsh::to_vec(&self.fso.spaceout).expect("valid")
+    }
+
+    pub fn outpoint_bytes(&self) -> Vec<u8> {
+        borsh::to_vec(&EncodableOutpoint(self.fso.outpoint())).expect("valid")
+    }
+}
+
+impl TestNum {
+    pub fn new(genesis_spk: ScriptBuf, block_height: u32) -> Self {
+        let num_id = NumId::from_spk::<KeyHash>(genesis_spk);
+
+        let mut rng = rand::thread_rng();
+        let mut txid_bytes = [0u8; 32];
+        rng.fill(&mut txid_bytes);
+
+        let txid = Txid::from_slice(&txid_bytes).expect("valid txid");
+        let n: u32 = rng.r#gen();
+        let (script_pubkey, keypair) = gen_p2tr_spk();
+
+        let fso = FullNumOut {
+            txid,
+            numout: NumOut {
+                n: n as usize,
+                num: Num {
+                    id: num_id,
+                    name: SNumeric::new(0, 0, 0),
+                    data: None,
+                    last_update: block_height,
+                },
+                value: Default::default(),
+                script_pubkey,
+                spent: false,
+            },
+        };
+
+        TestNum { fso, keypair }
+    }
+
+    pub fn id(&self) -> NumId {
+        self.fso.numout.num.id
+    }
+
+    pub fn outpoint_key(&self) -> NumOutpointKey {
+        NumOutpointKey::from_outpoint::<KeyHash>(self.fso.outpoint())
+    }
+
+    pub fn numout_bytes(&self) -> Vec<u8> {
+        borsh::to_vec(&self.fso.numout).expect("valid")
+    }
+
+    pub fn outpoint_bytes(&self) -> Vec<u8> {
+        borsh::to_vec(&EncodableOutpoint(self.fso.outpoint())).expect("valid")
+    }
+}
+
+#[derive(Clone)]
+pub struct TestChain {
+    pub spaces_tree: SubTree<Sha256Hasher>,
+    pub nums_tree: SubTree<Sha256Hasher>,
+    pub spaces: HashMap<SLabel, TestSpace>,
+    pub nums: HashMap<NumId, TestNum>,
+    pub block_height: u32,
+}
+
+pub struct TestHandleTree {
+    pub space: SLabel,
+    pub ds: TestDelegatedSpace,
+    pub handle_tree: SubTree<Sha256Hasher>,
+    pub commitments: Vec<TestCommitmentBundle>,
+    pub staged: HashMap<Subname, StagedHandle>,
+}
+
+pub struct StagedHandle {
+    pub handle: TestHandle,
+    pub signature: Signature,
+}
+
+pub struct TestCommitmentBundle {
+    root: [u8; 32],
+    handles: HashMap<Subname, TestHandle>,
+    handle_tree: SubTree<Sha256Hasher>,
+    receipt: Option<Receipt>,
+}
+
+impl Default for TestChain {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TestChain {
+    pub fn new() -> Self {
+        Self {
+            spaces_tree: SubTree::empty(),
+            nums_tree: SubTree::empty(),
+            spaces: Default::default(),
+            nums: Default::default(),
+            block_height: 0,
+        }
+    }
+
+    pub fn increase_time(&mut self, n: u32) {
+        self.block_height += n;
+    }
+
+    pub fn add_space(&mut self, name: &str) -> TestSpace {
+        let space = TestSpace::new(name, self.block_height);
+        assert!(!self.spaces.contains_key(&space.label()));
+
+        // insert outpoint -> spaceout mapping
+        self.spaces_tree
+            .insert(
+                space.outpoint_key().into(),
+                ValueOrHash::Value(space.spaceout_bytes()),
+            )
+            .expect("insert space");
+        // insert space -> outpoint mapping
+        self.spaces_tree
+            .insert(
+                space.space_key().into(),
+                ValueOrHash::Value(space.outpoint_bytes()),
+            )
+            .expect("insert outpoint");
+        self.spaces.insert(space.label(), space.clone());
+
+        space
+    }
+
+    pub fn current_root_anchor(&self) -> RootAnchor {
+        let spaces_root = self.spaces_tree.compute_root().expect("spaces root");
+        let nums_root = self.nums_tree.compute_root().expect("nums root");
+
+        let block_hash =
+            BlockHash::from_byte_array(rolling_hash::<KeyHash>(spaces_root, nums_root));
+
+        RootAnchor {
+            spaces_root,
+            nums_root: Some(nums_root),
+            block: ChainAnchor {
+                hash: block_hash,
+                height: self.block_height,
+            },
+        }
+    }
+
+    pub fn add_num(&mut self, genesis_spk: ScriptBuf) -> TestNum {
+        let num = TestNum::new(genesis_spk, self.block_height);
+        assert!(!self.nums.contains_key(&num.id()));
+
+        // Insert outpoint -> numout mapping
+        self.nums_tree
+            .insert(
+                num.outpoint_key().into(),
+                ValueOrHash::Value(num.numout_bytes()),
+            )
+            .expect("insert num");
+
+        // Insert NumId -> outpoint mapping
+        self.nums_tree
+            .insert(num.id().into(), ValueOrHash::Value(num.outpoint_bytes()))
+            .expect("insert outpoint");
+        self.nums.insert(num.id(), num.clone());
+        num
+    }
+
+    pub fn add_space_with_delegation(&mut self, name: &str) -> TestDelegatedSpace {
+        let space = self.add_space(name);
+        let num = self.add_num(space.script_pubkey());
+
+        // insert NumId -> Space mapping
+        let delegator_key = DelegatorKey::from_id::<KeyHash>(num.id());
+        self.nums_tree
+            .insert(
+                delegator_key.into(),
+                ValueOrHash::Value(space.label().as_ref().to_vec()),
+            )
+            .expect("insert delegator key");
+
+        TestDelegatedSpace { space, ptr: num }
+    }
+
+    pub fn insert_commitment(
+        &mut self,
+        ds: &TestDelegatedSpace,
+        root: [u8; 32],
+    ) -> spaces_nums::Commitment {
+        let prev_finalized = self.rollback_to_finalized_commitment(&ds.space.label());
+
+        let commitment = match prev_finalized {
+            None => spaces_nums::Commitment {
+                state_root: root,
+                prev_root: None,
+                rolling_hash: root,
+                block_height: self.block_height,
+            },
+            Some(prev) => spaces_nums::Commitment {
+                state_root: root,
+                prev_root: Some(prev.state_root),
+                rolling_hash: rolling_hash::<KeyHash>(prev.rolling_hash, root),
+                block_height: self.block_height,
+            },
+        };
+
+        let commitment_key = CommitmentKey::new::<KeyHash>(&ds.space.label(), root);
+
+        let commitment_bytes = borsh::to_vec(&commitment).expect("valid");
+
+        self.nums_tree
+            .insert(commitment_key.into(), ValueOrHash::Value(commitment_bytes))
+            .expect("insert commitment");
+        let registry_key = CommitmentTipKey::from_slabel::<KeyHash>(&ds.space.label());
+        self.nums_tree
+            .update(
+                registry_key.into(),
+                ValueOrHash::Value(commitment.state_root.to_vec()),
+            )
+            .expect("insert registry");
+
+        commitment
+    }
+
+    // If no root specified, will get the tip
+    pub fn get_commitment(
+        &self,
+        space: &SLabel,
+        root: Option<[u8; 32]>,
+    ) -> Option<spaces_nums::Commitment> {
+        let root = match root {
+            Some(root) => Some(root),
+            None => {
+                let registry_key = CommitmentTipKey::from_slabel::<KeyHash>(space);
+                let rkh: [u8; 32] = registry_key.into();
+                self.nums_tree
+                    .iter()
+                    .find(|(k, _)| **k == rkh)
+                    .map(|(_, v)| {
+                        let mut h = [0u8; 32];
+                        h.copy_from_slice(v);
+                        h
+                    })
+            }
+        }?;
+
+        let commitment_key = CommitmentKey::new::<KeyHash>(space, root);
+        let ckh: [u8; 32] = commitment_key.into();
+        self.nums_tree
+            .iter()
+            .find(|(k, _)| **k == ckh)
+            .map(|(_, v)| {
+                let commitment: spaces_nums::Commitment =
+                    borsh::from_slice(v).expect("valid commitment");
+                commitment
+            })
+    }
+
+    pub fn rollback_to_finalized_commitment(
+        &mut self,
+        space: &SLabel,
+    ) -> Option<spaces_nums::Commitment> {
+        let commitment = self.get_commitment(space, None)?;
+        if commitment.is_finalized(self.block_height) {
+            return Some(commitment);
+        }
+
+        // it's not finalized, so delete it
+        let registry_key = CommitmentTipKey::from_slabel::<KeyHash>(space);
+        let commitment_key = CommitmentKey::new::<KeyHash>(space, commitment.state_root);
+        let mut nums_tree = self.nums_tree.clone();
+        nums_tree = nums_tree.delete(&registry_key.into()).expect("delete");
+        nums_tree = nums_tree.delete(&commitment_key.into()).expect("delete");
+        self.nums_tree = nums_tree;
+
+        // there can only be one unfinalized commitment, so prev is finalized if it exists
+        let prev_root = commitment.prev_root?;
+        let finalized = self.get_commitment(space, Some(prev_root))?;
+
+        // update tip pointer
+        self.nums_tree
+            .update(
+                registry_key.into(),
+                ValueOrHash::Value(finalized.state_root.to_vec()),
+            )
+            .expect("update");
+
+        Some(finalized)
+    }
+}
+
+pub struct TestHandle {
+    pub name: Subname,
+    pub genesis_spk: ScriptBuf,
+    pub keypair: Keypair,
+}
+
+impl TestHandleTree {
+    pub fn new(ds: &TestDelegatedSpace) -> Self {
+        Self {
+            space: ds.space.label(),
+            ds: ds.clone(),
+            handle_tree: SubTree::empty(),
+            commitments: vec![],
+            staged: Default::default(),
+        }
+    }
+
+    pub fn add_handle(&mut self, name: &str) {
+        let label = label(name);
+        let label_hash = KeyHash::hash(label.as_slabel().as_ref());
+        assert!(
+            !self
+                .handle_tree
+                .contains(&label_hash)
+                .expect("complete tree"),
+            "already exists"
+        );
+        assert!(!self.staged.contains_key(&label), "already staged");
+
+        let (genesis_spk, keypair) = gen_p2tr_spk();
+        let handle = TestHandle {
+            name: label,
+            genesis_spk: genesis_spk.clone(),
+            keypair,
+        };
+
+        let h = sname(&format!("{}{}", name, self.space));
+        let num_id = Some(NumId::from_spk::<KeyHash>(genesis_spk.clone()));
+        let zone = Zone {
+            anchor: 0,
+            sovereignty: SovereigntyState::Dependent,
+            canonical: h.clone(),
+            handle: h,
+            alias: None,
+            script_pubkey: genesis_spk,
+            fallback_records: sip7::RecordSet::default(),
+            records: sip7::RecordSet::default(),
+            delegate: ProvableOption::Unknown,
+            commitment: ProvableOption::Unknown,
+            num_id,
+            anchor_hash: [0u8; 32],
+        };
+
+        let signature = sign_zone(&zone, &self.ds.ptr.keypair);
+        let staged = StagedHandle { handle, signature };
+
+        self.staged.insert(staged.handle.name.clone(), staged);
+    }
+
+    pub fn commit(&mut self, chain: &mut TestChain) {
+        assert!(!self.staged.is_empty(), "no handles to commit");
+
+        let initial_root = self.handle_tree.compute_root().expect("compute root");
+        let handles: HashMap<Subname, TestHandle> = std::mem::take(&mut self.staged)
+            .into_iter()
+            .map(|(k, v)| (k, v.handle))
+            .collect();
+
+        for handle in handles.values() {
+            let handle_key = KeyHash::hash(handle.name.as_slabel().as_ref());
+            let handle_out = HandleOut {
+                name: handle.name.as_slabel().clone(),
+                spk: handle.genesis_spk.clone(),
+            };
+            self.handle_tree
+                .insert(handle_key, ValueOrHash::Value(handle_out.to_vec()))
+                .expect("insert handle");
+        }
+
+        let final_root = self.handle_tree.compute_root().expect("compute root");
+        let onchain_commitment = chain.insert_commitment(&self.ds, final_root);
+
+        let receipt = if onchain_commitment.prev_root.is_some() {
+            let commitment = libveritas_zk::guest::Commitment {
+                policy_step: libveritas::constants::STEP_ID,
+                policy_fold: libveritas::constants::FOLD_ID,
+                initial_root,
+                final_root,
+                rolling_hash: onchain_commitment.rolling_hash,
+                kind: libveritas_zk::guest::CommitmentKind::Fold,
+            };
+
+            // Serialize using risc0 serde format (u32 words → le bytes),
+            // matching what a real guest would write via env::commit()
+            let words = risc0_zkvm::serde::to_vec(&commitment).expect("serialize commitment");
+            let journal_bytes: Vec<u8> = words.iter().flat_map(|w| w.to_le_bytes()).collect();
+
+            let receipt_claim =
+                ReceiptClaim::ok(libveritas::constants::FOLD_ID, journal_bytes.clone());
+            Some(Receipt::new(
+                InnerReceipt::Fake(FakeReceipt::new(receipt_claim)),
+                journal_bytes,
+            ))
+        } else {
+            None
+        };
+
+        self.commitments.push(TestCommitmentBundle {
+            root: final_root,
+            handles,
+            handle_tree: self.handle_tree.clone(),
+            receipt,
+        })
+    }
+
+    /// Build a Message with proved (pruned) Merkle proofs.
+    ///
+    /// * `chain` - The chain snapshot at the anchor time (must match anchor roots)
+    /// * `commitment_idx` - Which commitment to include
+    /// * `handle_names` - Handle subjects to include (empty for root-only)
+    /// * `anchor` - The chain anchor for the message
+    pub fn build_message(
+        &self,
+        chain: &TestChain,
+        commitment_idx: usize,
+        handle_names: &[&str],
+        anchor: &ChainAnchor,
+    ) -> Message {
+        let tcb = &self.commitments[commitment_idx];
+
+        // --- Spaces tree keys ---
+        let spaces_keys: Vec<[u8; 32]> = vec![
+            self.ds.space.outpoint_key().into(),
+            self.ds.space.space_key().into(),
+        ];
+
+        // --- Nums tree keys ---
+        let mut nums_keys: Vec<[u8; 32]> =
+            vec![self.ds.ptr.outpoint_key().into(), self.ds.ptr.id().into()];
+
+        // Registry key (commitment tip pointer)
+        nums_keys.push(CommitmentTipKey::from_slabel::<KeyHash>(&self.space).into());
+
+        // Commitment key for the commitment being proven
+        nums_keys.push(CommitmentKey::new::<KeyHash>(&self.space, tcb.root).into());
+
+        // --- Handle tree keys + handles ---
+        let mut handle_keys: Vec<[u8; 32]> = Vec::new();
+        let mut handles: Vec<msg::Handle> = Vec::new();
+
+        for &name in handle_names {
+            let l = label(name);
+            let label_hash = KeyHash::hash(l.as_slabel().as_ref());
+            handle_keys.push(label_hash);
+
+            // Find handle across all commitments up to this one
+            let handle = self.commitments[..=commitment_idx]
+                .iter()
+                .find_map(|c| c.handles.get(&l))
+                .expect("handle must exist in a previous commitment");
+
+            // Handle's num ID for key rotation lookup (proves non-existence in nums tree)
+            let handle_num_id = NumId::from_spk::<KeyHash>(handle.genesis_spk.clone());
+            nums_keys.push(handle_num_id.into());
+
+            handles.push(msg::Handle {
+                name: l,
+                genesis_spk: handle.genesis_spk.clone(),
+                records: None,
+                signature: None, // Final cert - no signature
+            });
+        }
+
+        // --- Create proved subtrees ---
+        let spaces_proof = chain
+            .spaces_tree
+            .prove(&spaces_keys, ProofType::Standard)
+            .expect("prove spaces");
+        let nums_proof = chain
+            .nums_tree
+            .prove(&nums_keys, ProofType::Standard)
+            .expect("prove nums");
+        let handles_proof = tcb
+            .handle_tree
+            .prove(&handle_keys, ProofType::Standard)
+            .expect("prove handles");
+
+        // --- Build message ---
+        Message {
+            chain: msg::ChainProof {
+                anchor: *anchor,
+                spaces: SpacesSubtree(spaces_proof),
+                nums: NumsSubtree(nums_proof),
+            },
+            spaces: vec![msg::Bundle {
+                subject: self.space.clone(),
+                receipt: tcb.receipt.clone(),
+                epochs: vec![msg::Epoch {
+                    tree: HandleSubtree(handles_proof),
+                    handles,
+                }],
+                records: None,
+                delegate_records: None,
+            }],
+        }
+    }
+
+    /// Build a temporary certificate message for a staged (uncommitted) handle.
+    ///
+    /// The handle must be in `staged`. The message includes an exclusion proof
+    /// (handle not in tree) and the pre-computed signature from the delegate.
+    pub fn build_temporary_message(
+        &self,
+        chain: &TestChain,
+        commitment_idx: usize,
+        handle_name: &str,
+        anchor: &ChainAnchor,
+    ) -> Message {
+        let tcb = &self.commitments[commitment_idx];
+        let staged = self
+            .staged
+            .get(&label(handle_name))
+            .expect("handle must be staged");
+
+        // --- Spaces tree keys ---
+        let spaces_keys: Vec<[u8; 32]> = vec![
+            self.ds.space.outpoint_key().into(),
+            self.ds.space.space_key().into(),
+        ];
+
+        // --- Nums tree keys ---
+        let mut nums_keys: Vec<[u8; 32]> =
+            vec![self.ds.ptr.outpoint_key().into(), self.ds.ptr.id().into()];
+        nums_keys.push(CommitmentTipKey::from_slabel::<KeyHash>(&self.space).into());
+        nums_keys.push(CommitmentKey::new::<KeyHash>(&self.space, tcb.root).into());
+
+        // Handle's num ID for key rotation (exclusion proof — handle never on-chain)
+        let handle_num_id = NumId::from_spk::<KeyHash>(staged.handle.genesis_spk.clone());
+        nums_keys.push(handle_num_id.into());
+
+        // --- Handle exclusion proof ---
+        let handle_key = KeyHash::hash(staged.handle.name.as_slabel().as_ref());
+        let handle_keys: Vec<[u8; 32]> = vec![handle_key];
+
+        // --- Create proved subtrees ---
+        let spaces_proof = chain
+            .spaces_tree
+            .prove(&spaces_keys, ProofType::Standard)
+            .expect("prove spaces");
+        let nums_proof = chain
+            .nums_tree
+            .prove(&nums_keys, ProofType::Standard)
+            .expect("prove nums");
+        let handles_proof = tcb
+            .handle_tree
+            .prove(&handle_keys, ProofType::Standard)
+            .expect("prove handles exclusion");
+
+        Message {
+            chain: msg::ChainProof {
+                anchor: *anchor,
+                spaces: SpacesSubtree(spaces_proof),
+                nums: NumsSubtree(nums_proof),
+            },
+            spaces: vec![msg::Bundle {
+                subject: self.space.clone(),
+                receipt: tcb.receipt.clone(),
+                epochs: vec![msg::Epoch {
+                    tree: HandleSubtree(handles_proof),
+                    handles: vec![msg::Handle {
+                        name: staged.handle.name.clone(),
+                        genesis_spk: staged.handle.genesis_spk.clone(),
+                        records: None,
+                        signature: Some(staged.signature),
+                    }],
+                }],
+                records: None,
+                delegate_records: None,
+            }],
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TestDelegatedSpace {
+    pub space: TestSpace,
+    pub ptr: TestNum,
+}
+
+/// Shared test fixture: a delegated space (@bitcoin) with two commitments.
+///
+/// Commitment 0: alice + bob  (finalized, no receipt needed)
+/// Commitment 1: charlie      (pending, has ZK receipt)
+struct Fixture {
+    finalized_chain: TestChain,
+    latest_chain: TestChain,
+    handles: TestHandleTree,
+    finalized_anchor: RootAnchor,
+    latest_anchor: RootAnchor,
+}
+
+impl Fixture {
+    fn new() -> Self {
+        let mut chain = TestChain::new();
+        let ds = chain.add_space_with_delegation("@bitcoin");
+
+        let mut handles = TestHandleTree::new(&ds);
+        handles.add_handle("alice");
+        handles.add_handle("bob");
+        handles.commit(&mut chain);
+
+        chain.increase_time(COMMITMENT_FINALITY_INTERVAL + 1);
+        let finalized_anchor = chain.current_root_anchor();
+        let finalized_chain = chain.clone();
+
+        chain.increase_time(1);
+        handles.add_handle("charlie");
+        handles.commit(&mut chain);
+        let latest_anchor = chain.current_root_anchor();
+
+        // add a staged handle for temporary cert testing
+        handles.add_handle("staged");
+
+        Fixture {
+            finalized_chain,
+            latest_chain: chain,
+            handles,
+            finalized_anchor,
+            latest_anchor,
+        }
+    }
+
+    fn veritas(&self) -> Veritas {
+        let anchors = vec![self.latest_anchor.clone(), self.finalized_anchor.clone()];
+        Veritas::new().with_anchors(anchors).expect("valid anchors")
+    }
+
+    /// Message proving commitment 0 (finalized) against the finalized anchor.
+    fn finalized_message(&self, handles: &[&str]) -> Message {
+        self.handles.build_message(
+            &self.finalized_chain,
+            0,
+            handles,
+            &self.finalized_anchor.block,
+        )
+    }
+
+    /// Message proving commitment 1 (pending) against the latest anchor.
+    fn pending_message(&self, handles: &[&str]) -> Message {
+        self.handles
+            .build_message(&self.latest_chain, 1, handles, &self.latest_anchor.block)
+    }
+
+    /// Temporary certificate message for a staged handle (not yet committed).
+    fn temporary_message(&self, handle_name: &str) -> Message {
+        self.handles.build_temporary_message(
+            &self.latest_chain,
+            1,
+            handle_name,
+            &self.latest_anchor.block,
+        )
+    }
+}
+
+#[test]
+fn verify_root_finalized() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    let result = veritas
+        .verify_with_options(&ctx, f.finalized_message(&[]), libveritas::VERIFY_DEV_MODE)
+        .expect("verify");
+
+    assert_eq!(result.zones.len(), 1);
+    let zone = &result.zones[0];
+    assert_eq!(zone.handle, sname("@bitcoin"));
+    assert!(matches!(zone.sovereignty, SovereigntyState::Sovereign));
+    let ProvableOption::Exists { value: c } = &zone.commitment else {
+        panic!("expected commitment Exists");
+    };
+    assert_eq!(c.onchain.state_root, f.handles.commitments[0].root);
+    assert!(c.receipt_hash.is_none()); // First commitment, no receipt needed
+    assert!(matches!(zone.delegate, ProvableOption::Exists { .. }));
+}
+
+// Records whose embedded signature does not verify are silently omitted from
+// the verified zone rather than hard-failing the whole message (permissive —
+// e.g. records left behind by a rotated key). The invariant that everything in
+// `Zone::records` is authentically owner-signed is preserved.
+#[test]
+fn invalid_owner_records_are_omitted_not_fatal() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    // Owner records with the correct canonical name but a garbage signature, so
+    // verification reaches the schnorr check and fails there — the shape a
+    // stale/rotated-key signature produces.
+    let canonical = sname("@bitcoin");
+    let unsigned = msg::UnsignedRecordSet {
+        handle: canonical.clone(),
+        canonical: canonical.clone(),
+        flags: sip7::SIG_PRIMARY_ZONE,
+        records: sip7::RecordSet::new(sip7::Record::seq(1).pack().expect("pack seq")),
+        delegate: false,
+    };
+    let bad_records = unsigned.pack_sig(vec![0xABu8; 64]);
+
+    let mut message = f.finalized_message(&[]);
+    message.spaces[0].records = Some(bad_records);
+
+    // Must still verify (no hard fail) ...
+    let result = veritas
+        .verify_with_options(&ctx, message, libveritas::VERIFY_DEV_MODE)
+        .expect("invalid records must not fail verification");
+
+    // ... but the invalid records are dropped from the zone.
+    let zone = &result.zones[0];
+    assert_eq!(zone.handle, sname("@bitcoin"));
+    assert!(
+        zone.records.is_empty(),
+        "records with an invalid signature must be omitted from the verified zone"
+    );
+}
+
+#[test]
+fn verify_leaf_finalized() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.finalized_message(&["alice"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+
+    // Should have root zone + alice zone
+    assert_eq!(result.zones.len(), 2);
+    let alice = result
+        .zones
+        .iter()
+        .find(|z| z.handle == sname("alice@bitcoin"))
+        .expect("alice");
+    assert!(matches!(alice.sovereignty, SovereigntyState::Sovereign));
+
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.finalized_message(&["bob"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+    let bob = result
+        .zones
+        .iter()
+        .find(|z| z.handle == sname("bob@bitcoin"))
+        .expect("bob");
+    assert!(matches!(bob.sovereignty, SovereigntyState::Sovereign));
+}
+
+#[test]
+fn verify_root_pending() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    let result = veritas
+        .verify_with_options(&ctx, f.pending_message(&[]), libveritas::VERIFY_DEV_MODE)
+        .expect("verify");
+
+    assert_eq!(result.zones.len(), 1);
+    let zone = &result.zones[0];
+    assert!(matches!(zone.sovereignty, SovereigntyState::Sovereign));
+    let ProvableOption::Exists { value: c } = &zone.commitment else {
+        panic!("expected commitment Exists");
+    };
+    assert_eq!(c.onchain.state_root, f.handles.commitments[1].root);
+    assert!(c.receipt_hash.is_some()); // Non-first commitment, receipt verified
+}
+
+#[test]
+fn verify_leaf_pending() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.pending_message(&["charlie"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+    let charlie = result
+        .zones
+        .iter()
+        .find(|z| z.handle == sname("charlie@bitcoin"))
+        .expect("charlie");
+    assert!(matches!(charlie.sovereignty, SovereigntyState::Pending));
+}
+
+#[test]
+fn verify_leaf_across_anchors() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    // alice was committed in commitment 0, verified against the latest anchor
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.pending_message(&["alice"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+    let alice = result
+        .zones
+        .iter()
+        .find(|z| z.handle == sname("alice@bitcoin"))
+        .expect("alice");
+    assert_eq!(alice.handle, sname("alice@bitcoin"));
+}
+
+#[test]
+fn verify_leaf_temporary() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    // "staged" is in staged but not committed — uses delegate's signature
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.temporary_message("staged"),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+    let staged = result
+        .zones
+        .iter()
+        .find(|z| z.handle == sname("staged@bitcoin"))
+        .expect("staged");
+    assert_eq!(staged.handle, sname("staged@bitcoin"));
+    assert!(matches!(staged.sovereignty, SovereigntyState::Dependent));
+}
+
+#[test]
+fn verify_with_request_filter() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+
+    // Request only alice, not the root
+    let mut ctx = QueryContext::new();
+    ctx.add_request(sname("alice@bitcoin"));
+
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.finalized_message(&["alice", "bob"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+
+    // Returns alice plus the parent zone (needed to cache the verified
+    // receipt), but not bob.
+    assert_eq!(result.zones.len(), 2);
+    assert_eq!(result.zones[0].handle, sname("@bitcoin"));
+    assert_eq!(result.zones[1].handle, sname("alice@bitcoin"));
+}
+
+#[test]
+fn verify_with_cached_parent_zone() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+
+    // First verify to get parent zone
+    let ctx = QueryContext::new();
+    let result = veritas
+        .verify_with_options(&ctx, f.finalized_message(&[]), libveritas::VERIFY_DEV_MODE)
+        .expect("verify");
+    let parent_zone = result.zones[0].clone();
+
+    // Now verify with cached parent
+    let ctx = QueryContext::from_zones(vec![parent_zone]);
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.finalized_message(&["alice"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+
+    // Should succeed and include alice
+    let alice = result
+        .zones
+        .iter()
+        .find(|z| z.handle == sname("alice@bitcoin"))
+        .expect("alice");
+    assert_eq!(alice.handle, sname("alice@bitcoin"));
+}
+
+#[test]
+fn verify_uses_better_cached_zone() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+
+    // Create a "worse" cached zone with lower anchor
+    let cached_zone = Zone {
+        anchor: 0, // Lower than actual anchor
+        sovereignty: SovereigntyState::Dependent,
+        canonical: sname("alice@bitcoin"),
+        handle: sname("alice@bitcoin"),
+        alias: None,
+        script_pubkey: ScriptBuf::new(),
+        fallback_records: sip7::RecordSet::default(),
+        records: sip7::RecordSet::default(),
+        delegate: ProvableOption::Unknown,
+        commitment: ProvableOption::Unknown,
+        num_id: None,
+        anchor_hash: [0u8; 32],
+    };
+
+    let ctx = QueryContext::from_zones(vec![cached_zone.clone()]);
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.finalized_message(&["alice"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+
+    // Should return the newly verified zone (better anchor)
+    let alice = result
+        .zones
+        .iter()
+        .find(|z| z.handle == sname("alice@bitcoin"))
+        .expect("alice");
+    assert!(alice.anchor > 0);
+    assert!(matches!(alice.sovereignty, SovereigntyState::Sovereign));
+}
+
+#[test]
+fn certificate_iterator() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+    let ctx = QueryContext::new();
+
+    // Verify root + two leaves
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.finalized_message(&["alice", "bob"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+
+    let certs: Vec<Certificate> = result.certificates().collect();
+
+    // Should have 3 certs: root, alice, bob
+    assert_eq!(certs.len(), 3);
+
+    // First should be root
+    assert_eq!(certs[0].subject, sname("@bitcoin"));
+    assert!(matches!(certs[0].witness, Witness::Root { .. }));
+
+    // Then leaves
+    let alice_cert = certs
+        .iter()
+        .find(|c| c.subject == sname("alice@bitcoin"))
+        .expect("alice cert");
+    assert!(matches!(alice_cert.witness, Witness::Leaf { .. }));
+
+    let bob_cert = certs
+        .iter()
+        .find(|c| c.subject == sname("bob@bitcoin"))
+        .expect("bob cert");
+    assert!(matches!(bob_cert.witness, Witness::Leaf { .. }));
+}
+
+#[test]
+fn certificate_iterator_with_request_filter() {
+    let f = Fixture::new();
+    let veritas = f.veritas();
+
+    // Request only alice, not the root
+    let mut ctx = QueryContext::new();
+    ctx.add_request(sname("alice@bitcoin"));
+
+    let result = veritas
+        .verify_with_options(
+            &ctx,
+            f.finalized_message(&["alice"]),
+            libveritas::VERIFY_DEV_MODE,
+        )
+        .expect("verify");
+
+    let certs: Vec<Certificate> = result.certificates().collect();
+
+    // The parent zone is included for receipt caching, so the root cert
+    // comes first, followed by alice.
+    assert_eq!(certs.len(), 2);
+    assert_eq!(certs[0].subject, sname("@bitcoin"));
+    assert!(matches!(certs[0].witness, Witness::Root { .. }));
+    assert_eq!(certs[1].subject, sname("alice@bitcoin"));
+    assert!(matches!(certs[1].witness, Witness::Leaf { .. }));
+}
+
+#[test]
+fn equal_commitment_heights_fall_through_to_freshness() {
+    let mut commitment = libveritas::CommitmentInfo::empty();
+    commitment.onchain.block_height = 100;
+
+    let make = |anchor: u32| Zone {
+        anchor,
+        sovereignty: SovereigntyState::Sovereign,
+        canonical: sname("alice@bitcoin"),
+        handle: sname("alice@bitcoin"),
+        alias: None,
+        script_pubkey: ScriptBuf::new(),
+        fallback_records: sip7::RecordSet::default(),
+        records: sip7::RecordSet::default(),
+        delegate: ProvableOption::Unknown,
+        commitment: ProvableOption::Exists {
+            value: commitment.clone(),
+        },
+        num_id: None,
+        anchor_hash: [0u8; 32],
+    };
+
+    // Equal commitment heights must fall through to the remaining
+    // comparisons instead of declaring both zones better than each other.
+    let older = make(5);
+    let newer = make(10);
+    assert!(!older.is_better_than(&newer).unwrap());
+    assert!(newer.is_better_than(&older).unwrap());
+
+    // A stripped (Unknown) commitment never beats a proven one,
+    // regardless of anchor.
+    let mut unknown = make(u32::MAX);
+    unknown.commitment = ProvableOption::Unknown;
+    assert!(!unknown.is_better_than(&newer).unwrap());
+    assert!(newer.is_better_than(&unknown).unwrap());
+}
+
+#[test]
+fn fresher_records_beat_higher_anchor() {
+    let mut commitment = libveritas::CommitmentInfo::empty();
+    commitment.onchain.block_height = 100;
+
+    let make = |anchor: u32, seq: u64| Zone {
+        anchor,
+        sovereignty: SovereigntyState::Sovereign,
+        canonical: sname("alice@bitcoin"),
+        handle: sname("alice@bitcoin"),
+        alias: None,
+        script_pubkey: ScriptBuf::new(),
+        fallback_records: sip7::RecordSet::default(),
+        records: sip7::RecordSet::new(sip7::Record::seq(seq).pack().expect("pack seq")),
+        delegate: ProvableOption::Unknown,
+        commitment: ProvableOption::Exists {
+            value: commitment.clone(),
+        },
+        num_id: None,
+        anchor_hash: [0u8; 32],
+    };
+
+    // Replayed zone: staler records (lower seq) but a higher anchor.
+    // The fresher records must win — anchor is only a tiebreaker.
+    let stale_high_anchor = make(100, 1);
+    let fresh_low_anchor = make(5, 2);
+    assert!(!stale_high_anchor.is_better_than(&fresh_low_anchor).unwrap());
+    assert!(fresh_low_anchor.is_better_than(&stale_high_anchor).unwrap());
+
+    // Identical records: anchor breaks the tie.
+    let a = make(100, 3);
+    let b = make(5, 3);
+    assert!(a.is_better_than(&b).unwrap());
+    assert!(!b.is_better_than(&a).unwrap());
+}
+
+#[test]
+fn temporary_cert_rejected_when_name_taken_by_other_key() {
+    let mut f = Fixture::new();
+    let veritas = f.veritas();
+
+    // "charlie" is committed in the tip tree under its own genesis key.
+    // Forge a temporary cert binding "charlie" to a different key, with a
+    // valid delegate signature — the exclusion proof must still reject it.
+    let (attacker_spk, attacker_keypair) = gen_p2tr_spk();
+    let subject = sname("charlie@bitcoin");
+    let zone = Zone {
+        anchor: 0,
+        sovereignty: SovereigntyState::Dependent,
+        canonical: subject.clone(),
+        handle: subject,
+        alias: None,
+        script_pubkey: attacker_spk.clone(),
+        fallback_records: sip7::RecordSet::default(),
+        records: sip7::RecordSet::default(),
+        delegate: ProvableOption::Unknown,
+        commitment: ProvableOption::Unknown,
+        num_id: Some(NumId::from_spk::<KeyHash>(attacker_spk.clone())),
+        anchor_hash: [0u8; 32],
+    };
+    let signature = sign_zone(&zone, &f.handles.ds.ptr.keypair);
+    f.handles.staged.insert(
+        label("charlie"),
+        StagedHandle {
+            handle: TestHandle {
+                name: label("charlie"),
+                genesis_spk: attacker_spk,
+                keypair: attacker_keypair,
+            },
+            signature,
+        },
+    );
+
+    let err = match veritas.verify_with_options(
+        &QueryContext::new(),
+        f.temporary_message("charlie"),
+        libveritas::VERIFY_DEV_MODE,
+    ) {
+        Ok(_) => panic!("temporary cert for a taken name must be rejected"),
+        Err(e) => e,
+    };
+    assert!(
+        matches!(err, libveritas::MessageError::HandleAlreadyExists { .. }),
+        "expected HandleAlreadyExists, got: {err}"
+    );
+}
+
+// libveritas's trust computation delegates to spaces_nums's canonical helpers.
+// This pins the output byte-for-byte so a future re-inline can't silently drift
+// from the layout certrelay signs (trust_set.id) and fabric checks (root ids).
+#[test]
+fn trust_set_matches_canonical_spaces_nums_layout() {
+    let mk = |h: u8, height: u32| RootAnchor {
+        spaces_root: [h; 32],
+        nums_root: Some([h.wrapping_add(1); 32]),
+        block: ChainAnchor {
+            hash: BlockHash::from_byte_array([h.wrapping_add(2); 32]),
+            height,
+        },
+    };
+    // Includes a nums_root = None anchor to pin the unwrap_or([0; 32]) branch.
+    let none_anchor = RootAnchor {
+        spaces_root: [9u8; 32],
+        nums_root: None,
+        block: ChainAnchor {
+            hash: BlockHash::from_byte_array([10u8; 32]),
+            height: 1,
+        },
+    };
+    let anchors = vec![mk(1, 100), mk(2, 99), none_anchor, mk(3, 98)];
+
+    for a in &anchors {
+        assert_eq!(
+            libveritas::compute_root_id(a),
+            spaces_nums::compute_root_id(a),
+            "compute_root_id drifted from canonical spaces_nums layout"
+        );
+    }
+
+    let ts = libveritas::compute_trust_set(&anchors);
+    assert_eq!(
+        ts.id,
+        spaces_nums::compute_trust_id(&anchors),
+        "trust_set.id drifted from canonical compute_trust_id (certrelay signs this)"
+    );
+    assert_eq!(
+        ts.roots,
+        anchors
+            .iter()
+            .map(spaces_nums::compute_root_id)
+            .collect::<Vec<_>>(),
+        "trust_set.roots drifted from canonical per-anchor root ids"
+    );
+}

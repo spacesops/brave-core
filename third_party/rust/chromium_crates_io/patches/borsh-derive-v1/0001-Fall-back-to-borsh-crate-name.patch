@@ -1,0 +1,21 @@
+From: Brave
+Subject: [PATCH] Fall back to `borsh` when Cargo.toml is unavailable
+
+GN builds have no Cargo.toml for proc_macro_crate to read.
+---
+diff --git a/brave/third_party/rust/chromium_crates_io/vendor/borsh-derive-v1/src/internals/cratename.rs b/brave/third_party/rust/chromium_crates_io/vendor/borsh-derive-v1/src/internals/cratename.rs
+index 3d2fc0f..f6e677e 100644
+--- a/brave/third_party/rust/chromium_crates_io/vendor/borsh-derive-v1/src/internals/cratename.rs
++++ b/brave/third_party/rust/chromium_crates_io/vendor/borsh-derive-v1/src/internals/cratename.rs
+@@ -18,9 +18,8 @@ pub(crate) fn get(attrs: &[Attribute]) -> Result<Path, Error> {
+ }
+ 
+ pub(crate) fn get_from_cargo() -> Ident {
+-    let name = &crate_name(BORSH)
+-        .unwrap_or_else(|err| panic!("`proc_macro_crate::crate_name` call error: {:#?}", err));
+-    let name = match name {
++    let name = crate_name(BORSH).unwrap_or(FoundCrate::Itself);
++    let name = match &name {
+         FoundCrate::Itself => BORSH,
+         FoundCrate::Name(name) => name.as_str(),
+     };

@@ -38,8 +38,10 @@ cargo_crate("lib") {
 
   allow_unsafe = true
 
+  deps = [ "//brave/third_party/rust/serde/v1:lib" ]
   features = [
     "default",
+    "serde",
     "std",
   ]
   build_root =

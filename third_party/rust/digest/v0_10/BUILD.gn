@@ -44,15 +44,18 @@ cargo_crate("lib") {
 
   deps = [
     "//brave/third_party/rust/block_buffer/v0_10:lib",
+    "//brave/third_party/rust/const_oid/v0_9:lib",
     "//brave/third_party/rust/crypto_common/v0_1:lib",
     "//brave/third_party/rust/subtle/v2:lib",
   ]
   features = [
     "alloc",
     "block-buffer",
+    "const-oid",
     "core-api",
     "default",
     "mac",
+    "oid",
     "std",
     "subtle",
   ]

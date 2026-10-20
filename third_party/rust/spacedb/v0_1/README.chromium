@@ -1,0 +1,10 @@
+Name: spacedb
+URL: https://crates.io/crates/spacedb
+Version: 0.1.4
+Revision: dc879b87069e7b6c1dc5285dc587552a5803ca15
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/spacedb-v0_1/LICENSE
+Shipped: yes
+Security Critical: yes
+
+Description: A cryptographically verifiable data store and universal accumulator for the Spaces protocol.

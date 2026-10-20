@@ -1,0 +1,10 @@
+Name: secp256k1-sys
+URL: https://crates.io/crates/secp256k1-sys
+Version: 0.10.1
+Revision: ba04d92eeed3339a30d638082ca0175c405ccff0
+License: CC0-1.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/secp256k1-sys-v0_10/LICENSE
+Shipped: yes
+Security Critical: yes
+
+Description: FFI for Pieter Wuille's `libsecp256k1` library.

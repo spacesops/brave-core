@@ -38,6 +38,7 @@ cargo_crate("lib") {
   allow_unsafe = true
 
   deps = [
+    "//brave/third_party/rust/log/v0_4:lib",
     "//brave/third_party/rust/pin_project_lite/v0_2:lib",
     "//brave/third_party/rust/tracing_attributes/v0_1:lib",
     "//brave/third_party/rust/tracing_core/v0_1:lib",
@@ -45,6 +46,7 @@ cargo_crate("lib") {
   features = [
     "attributes",
     "default",
+    "log",
     "release_max_level_debug",
     "std",
     "tracing-attributes",

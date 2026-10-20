@@ -1,0 +1,10 @@
+Name: foreign-types
+URL: https://crates.io/crates/foreign-types
+Version: 0.5.0
+Revision: c5a90ed3f39dd5fe8b5af6e9cee1bc446746272c
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/foreign-types-v0_5/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: A framework for Rust wrappers over C APIs

@@ -1,0 +1,160 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "bitcoin"
+  epoch = "0.32"
+  crate_type = "rlib"
+  crate_root = "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/address/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/address/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/array_vec.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/bip152.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/bip158.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/bip32.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/block.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/constants.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/locktime/absolute.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/locktime/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/locktime/relative.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/opcodes.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/borrowed.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/builder.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/instruction.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/owned.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/push_bytes.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/witness_program.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/script/witness_version.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/transaction.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/blockdata/witness.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/consensus/encode.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/consensus/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/consensus/params.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/consensus/serde.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/consensus/validation.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/const_tools.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/crypto/ecdsa.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/crypto/key.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/crypto/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/crypto/sighash.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/crypto/taproot.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/hash_types.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/internal_macros.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/merkle_tree/block.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/merkle_tree/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/network.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/address.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/message.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/message_blockdata.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/message_bloom.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/message_compact_blocks.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/message_filter.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/message_network.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/p2p/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/policy.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/pow.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/error.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/macros.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/map/global.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/map/input.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/map/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/map/output.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/raw.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/psbt/serialize.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/serde_utils.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/sign_message.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/taproot/merkle_branch.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/taproot/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/taproot/serialized_signature.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/src/test_macros.rs",
+  ]
+  inputs = []
+
+  build_native_rust_unit_tests = false
+  edition = "2021"
+  cargo_pkg_authors = "Andrew Poelstra <apoelstra@wpsoftware.net>"
+  cargo_pkg_name = "bitcoin"
+  cargo_pkg_description =
+      "General purpose library for using and interoperating with Bitcoin."
+  cargo_pkg_repository = "https://github.com/rust-bitcoin/rust-bitcoin/"
+  cargo_pkg_version = "0.32.102"
+
+  allow_unsafe = true
+
+  deps = [
+    "//brave/third_party/rust/base58ck/v0_1:lib",
+    "//brave/third_party/rust/base64/v0_21:lib",
+    "//brave/third_party/rust/bech32/v0_11:lib",
+    "//brave/third_party/rust/bitcoin_hashes/v0_14:lib",
+    "//brave/third_party/rust/bitcoin_io/v0_1:lib",
+    "//brave/third_party/rust/bitcoin_units/v0_1:lib",
+    "//brave/third_party/rust/hex_conservative/v0_2:lib",
+    "//brave/third_party/rust/hex_lit/v0_1:lib",
+    "//brave/third_party/rust/secp256k1/v0_29:lib",
+    "//brave/third_party/rust/serde/v1:lib",
+  ]
+  aliased_deps = {
+    actual_serde = "//brave/third_party/rust/serde/v1:lib"
+    base58 = "//brave/third_party/rust/base58ck/v0_1:lib"
+    hashes = "//brave/third_party/rust/bitcoin_hashes/v0_14:lib"
+    hex = "//brave/third_party/rust/hex_conservative/v0_2:lib"
+    io = "//brave/third_party/rust/bitcoin_io/v0_1:lib"
+    units = "//brave/third_party/rust/bitcoin_units/v0_1:lib"
+  }
+  features = [
+    "actual-serde",
+    "base64",
+    "serde",
+  ]
+  build_root = "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/build.rs"
+  build_sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/bitcoin-v0_32/build.rs",
+  ]
+  rustenv = []
+  rustflags = []
+  aliased_deps.actual_serde = "//third_party/rust/serde/v1:lib"
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

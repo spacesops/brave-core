@@ -1,0 +1,10 @@
+Name: fabric-resolver
+URL: https://crates.io/crates/fabric-resolver
+Version: 0.2.11
+Revision: 8d7b456c091d13c8fd9b94a417a6c40e58bbdb19
+License: MIT
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: Client library for the Spaces protocol certificate relay network.

@@ -1,0 +1,135 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "ark_crypto_primitives"
+  epoch = "0.5"
+  crate_type = "rlib"
+  crate_root = "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/blake2s/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/blake2s/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/injective_map/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/injective_map/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/pedersen/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/commitment/pedersen/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/bowe_hopwood/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/bowe_hopwood/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/injective_map/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/injective_map/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/pedersen/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/pedersen/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/poseidon/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/poseidon/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/sha256/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/crh/sha256/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/encryption/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/encryption/elgamal/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/encryption/elgamal/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/encryption/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/macros.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/merkle_tree/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/merkle_tree/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/merkle_tree/tests/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/merkle_tree/tests/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/merkle_tree/tests/test_utils.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/prf/blake2s/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/prf/blake2s/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/prf/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/prf/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/signature/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/signature/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/signature/schnorr/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/signature/schnorr/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/snark/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/snark/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/absorb.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/constraints/absorb.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/constraints/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/merlin/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/poseidon/constraints.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/poseidon/grain_lfsr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/poseidon/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/poseidon/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/poseidon/traits.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/ark-crypto-primitives-v0_5/src/sponge/test.rs",
+  ]
+  inputs = []
+
+  build_native_rust_unit_tests = false
+  edition = "2021"
+  cargo_pkg_authors = "arkworks contributors"
+  cargo_pkg_name = "ark-crypto-primitives"
+  cargo_pkg_description = "A library of useful cryptographic primitives"
+  cargo_pkg_repository = "https://github.com/arkworks-rs/crypto-primitives"
+  cargo_pkg_version = "0.5.0"
+
+  allow_unsafe = false
+
+  deps = [
+    "//brave/third_party/rust/ahash/v0_8:lib",
+    "//brave/third_party/rust/ark_crypto_primitives_macros/v0_5:lib",
+    "//brave/third_party/rust/ark_ec/v0_5:lib",
+    "//brave/third_party/rust/ark_ff/v0_5:lib",
+    "//brave/third_party/rust/ark_relations/v0_5:lib",
+    "//brave/third_party/rust/ark_serialize/v0_5:lib",
+    "//brave/third_party/rust/ark_snark/v0_5:lib",
+    "//brave/third_party/rust/ark_std/v0_5:lib",
+    "//brave/third_party/rust/blake2/v0_10:lib",
+    "//brave/third_party/rust/derivative/v2:lib",
+    "//brave/third_party/rust/digest/v0_10:lib",
+    "//brave/third_party/rust/merlin/v3:lib",
+    "//brave/third_party/rust/sha2/v0_10:lib",
+  ]
+  features = [
+    "merlin",
+    "snark",
+    "sponge",
+    "std",
+  ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

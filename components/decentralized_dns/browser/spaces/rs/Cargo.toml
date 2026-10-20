@@ -1,0 +1,16 @@
+[package]
+name = "spaces-cxx"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+
+[dependencies]
+cxx = "1"
+fabric-resolver = { version = "0.2.11", default-features = false, features = ["signing"] }
+futures = "0.3"
+libveritas = "0.4.5"
+
+[lib]
+name = "spaces_cxx"
+crate-type = ["rlib"]
+path = "src/lib.rs"

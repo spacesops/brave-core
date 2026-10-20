@@ -1,0 +1,164 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from third_party/rust/chromium_crates_io/BUILD.gn.hbs by
+# tools/crates/gnrt.
+# Do not edit!
+
+import("//build/rust/cargo_crate.gni")
+
+cargo_crate("lib") {
+  crate_name = "risc0_zkvm"
+  epoch = "3"
+  crate_type = "rlib"
+  crate_root = "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/lib.rs"
+  sources = [
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/claim/maybe_pruned.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/claim/merge.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/claim/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/claim/receipt.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/claim/work.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/guest/env/batcher.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/guest/env/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/guest/env/read.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/guest/env/verify.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/guest/env/write.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/guest/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/api/client.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/api/convert.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/api/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/api/server.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/api/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/env.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/posix_io.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/prove/bonsai.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/prove/default.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/prove/external.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/prove/local.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/prove/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/prove/opts.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/client/slice_io.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/protos/api.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/protos/base.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/protos/core.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/protos/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/prove_info.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/recursion/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/recursion/prove/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/recursion/prove/zkr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/recursion/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/rpc.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/executor.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/gdb.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/profiler.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/profiler/inline.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/proto.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/args.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/cycle_count.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/fork.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/getenv.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/keccak.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/log.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/panic.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/pipe.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/posix_io.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/random.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/slice_io.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/verify.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/syscall/verify2.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/exec/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/prove/dev_mode.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/prove/keccak.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/prove/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/prove/prover_impl.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/prove/tests.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/prove/union_peak.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/session.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/host/server/testutils.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/lib.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/mmr.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/receipt.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/receipt/composite.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/receipt/groth16.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/receipt/merkle.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/receipt/segment.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/receipt/succinct.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/serde/deserializer.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/serde/err.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/serde/mod.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/serde/serializer.rs",
+    "//brave/third_party/rust/chromium_crates_io/vendor/risc0-zkvm-v3/src/sha.rs",
+  ]
+  inputs = []
+
+  build_native_rust_unit_tests = false
+  edition = "2021"
+  cargo_pkg_name = "risc0-zkvm"
+  cargo_pkg_description = "RISC Zero zero-knowledge VM"
+  cargo_pkg_repository = "https://github.com/risc0/risc0/"
+  cargo_pkg_version = "3.0.6"
+
+  allow_unsafe = true
+
+  deps = [
+    "//brave/third_party/rust/anyhow/v1:lib",
+    "//brave/third_party/rust/borsh/v1:lib",
+    "//brave/third_party/rust/bytemuck/v1:lib",
+    "//brave/third_party/rust/derive_more/v2:lib",
+    "//brave/third_party/rust/hex/v0_4:lib",
+    "//brave/third_party/rust/risc0_binfmt/v3:lib",
+    "//brave/third_party/rust/risc0_circuit_keccak/v4:lib",
+    "//brave/third_party/rust/risc0_circuit_recursion/v4:lib",
+    "//brave/third_party/rust/risc0_circuit_rv32im/v4:lib",
+    "//brave/third_party/rust/risc0_core/v3:lib",
+    "//brave/third_party/rust/risc0_groth16/v3:lib",
+    "//brave/third_party/rust/risc0_zkos_v1compat/v2:lib",
+    "//brave/third_party/rust/risc0_zkp/v3:lib",
+    "//brave/third_party/rust/risc0_zkvm_platform/v2:lib",
+    "//brave/third_party/rust/rrs_lib/v0_1:lib",
+    "//brave/third_party/rust/semver/v1:lib",
+    "//brave/third_party/rust/serde/v1:lib",
+    "//brave/third_party/rust/sha2/v0_10:lib",
+    "//brave/third_party/rust/stability/v0_2:lib",
+    "//brave/third_party/rust/tracing/v0_1:lib",
+  ]
+  features = [ "std" ]
+  rustenv = []
+  rustflags = []
+
+  #####################################################################
+  # Tweaking which GN `config`s apply to this target.
+
+  # Config changes that apply to all `//third_party/rust` crates.
+  _configs_to_remove = [
+    # We don't need code coverage data for any `chromium_crates_io` crates.
+    "//build/config/coverage:default_coverage",
+
+    # This is third-party code, so remove `chromium_code` config.  We are not
+    # at the same time adding `//build/config/compiler:no_chromium_code`,
+    # because 1) we don't want to pull how warnings are handled by that config
+    # and 2) that config doesn't have any non-warnings-related stuff.
+    "//build/config/compiler:chromium_code",
+  ]
+  _configs_to_add = []
+
+  # Changing (if needed) which configs apply to this specific crate (based on
+  # `extra_kv.configs_to_remove` and `extra_kv.configs_to_add` from
+  # `gnrt_config.toml`).
+  _configs_to_remove += []
+  _configs_to_add += []
+
+  # Applying config changes.
+  library_configs -= _configs_to_remove
+  library_configs += _configs_to_add
+  executable_configs -= _configs_to_remove
+  executable_configs += _configs_to_add
+  proc_macro_configs -= _configs_to_remove
+  proc_macro_configs += _configs_to_add
+}

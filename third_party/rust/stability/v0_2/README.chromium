@@ -1,0 +1,10 @@
+Name: stability
+URL: https://crates.io/crates/stability
+Version: 0.2.1
+Revision: 241f78729fac623b1f0845784b12f86eb809c459
+License: MIT
+License File: //brave/third_party/rust/chromium_crates_io/vendor/stability-v0_2/LICENSE
+Shipped: yes
+Security Critical: yes
+
+Description: Rust API stability attributes for the rest of us.

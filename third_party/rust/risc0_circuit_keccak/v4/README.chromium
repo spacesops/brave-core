@@ -1,0 +1,10 @@
+Name: risc0-circuit-keccak
+URL: https://crates.io/crates/risc0-circuit-keccak
+Version: 4.0.6
+Revision: 8c215e2f4ccdd935f0517bf05d90f1ae032840a9
+License: Apache-2.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: RISC Zero circuit for keccak

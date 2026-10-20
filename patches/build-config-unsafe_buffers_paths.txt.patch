@@ -1,8 +1,8 @@
 diff --git a/build/config/unsafe_buffers_paths.txt b/build/config/unsafe_buffers_paths.txt
-index ec12fe9208233cf9f2c26921f1171ca5e4abe893..da45db4fd5ca0f91809776a54a904a0c3b5f25be 100644
+index ec12fe9208233cf9f2c26921f1171ca5e4abe893..a50a54d2ec00419c3f912e1a03044e52462684da 100644
 --- a/build/config/unsafe_buffers_paths.txt
 +++ b/build/config/unsafe_buffers_paths.txt
-@@ -31,3 +31,10 @@ $../../
+@@ -31,3 +31,11 @@ $../../
  +third_party/liburlpattern/
  -tools/
  -v8/
@@ -12,4 +12,5 @@ index ec12fe9208233cf9f2c26921f1171ca5e4abe893..da45db4fd5ca0f91809776a54a904a0c
 +-brave/third_party/bitcoin-core/
 +-brave/third_party/bspatch/
 +-brave/third_party/ethash/
++-brave/third_party/rust/chromium_crates_io/vendor/secp256k1-sys-v0_10/
 +-brave/vendor/bat-native-tweetnacl/

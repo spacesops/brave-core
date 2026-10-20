@@ -1,0 +1,9 @@
+Name: bitcoin
+URL: https://crates.io/crates/bitcoin
+Version: 0.32.102
+License: CC0-1.0
+License File:
+Shipped: yes
+Security Critical: yes
+
+Description: General purpose library for using and interoperating with Bitcoin.

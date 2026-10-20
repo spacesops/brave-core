@@ -1,0 +1,41 @@
+[package]
+name = "fabric-resolver"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "Client library for the Spaces protocol certificate relay network."
+documentation = "https://docs.rs/fabric-resolver"
+keywords = ["spaces", "fabric", "dns", "certificates"]
+categories = ["network-programming"]
+
+[lib]
+name = "fabric"
+path = "rust/src/lib.rs"
+
+[[bin]]
+name = "fabric"
+path = "rust/src/main.rs"
+required-features = ["client"]
+
+[features]
+default = ["client"]
+client = ["reqwest", "rand", "tokio", "secp256k1"]
+signing = ["secp256k1"]
+
+[dependencies]
+borsh = { version = "1.6", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+libveritas = { workspace = true }
+spaces_nums = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"], optional = true }
+rand = { version = "0.9", optional = true }
+sha2 = "0.10"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"], optional = true }
+dashmap = "6.1.0"
+hex = "0.4.3"
+secp256k1 = { version = "0.29", optional = true }

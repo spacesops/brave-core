@@ -1,0 +1,25 @@
+# Copyright 2023 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# @generated from `tools/crates/gnrt/removed_Cargo.toml.hbs`
+# by `tools/crates/run_gnrt.py vendor`. Do not edit!
+#
+# This is an empty placeholder that has replaced the
+# `rand_xorshift-0.5.0` crate.
+#
+# See `//tools/crates/gnrt/removed_crate.md` to learn more.
+
+[package]
+name = "rand_xorshift"
+version = "0.5.0"
+
+[package.metadata.gnrt]
+is_placeholder = true
+
+[features]
+"serde" = []
+
+[dependencies.rand_core]
+version = "^0.10.0"
+default_features = false

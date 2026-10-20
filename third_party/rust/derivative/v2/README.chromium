@@ -1,0 +1,10 @@
+Name: derivative
+URL: https://crates.io/crates/derivative
+Version: 2.2.0
+Revision: 770c67484a872470ca782202e13fc70a35e2695b
+License: Apache-2.0
+License File: //brave/third_party/rust/chromium_crates_io/vendor/derivative-v2/LICENSE-APACHE
+Shipped: yes
+Security Critical: yes
+
+Description: A set of alternative `derive` attributes for Rust

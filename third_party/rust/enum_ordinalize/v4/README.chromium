@@ -1,0 +1,10 @@
+Name: enum-ordinalize
+URL: https://crates.io/crates/enum-ordinalize
+Version: 4.4.2
+Revision: 1f08c14baceb082ddcbc88d89e8da5b488d5876e
+License: MIT
+License File: //brave/third_party/rust/chromium_crates_io/vendor/enum-ordinalize-v4/LICENSE
+Shipped: yes
+Security Critical: yes
+
+Description: This library enables enums to not only obtain the ordinal values of their variants but also allows for the construction of enums from an ordinal value.
