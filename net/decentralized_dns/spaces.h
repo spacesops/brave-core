@@ -17,19 +17,35 @@ class GURL;
 
 namespace decentralized_dns {
 
-// Returns the lowercase Spaces handle (e.g. "retro@space") for an http(s) URL
-// whose authority is `handle@space` with no '.' in the space and no password,
-// e.g. http://retro@space/. Returns an empty string otherwise.
+// A Spaces handle has two URL forms:
+// - The handle URL, typed and displayed: http://retro@space/.
+// - The internal URL, loaded: http://retro--space.alt/. Each handle is its own
+//   host under `.alt` (RFC 9476), so handles get separate origins and sites.
+
+// Returns the lowercase handle (e.g. "retro@space") for an http(s) handle URL:
+// a username, no password, and a host with no '.'. Returns "" otherwise.
 NET_EXPORT std::string GetSpacesHandle(const GURL& url);
 
-// Browser-process switch that lets the omnibox treat a bare `retro@space` as
-// a URL. Mirrors the Spaces resolve method being Enabled.
+// Encodes a handle as its internal host, e.g. "retro@space" ->
+// "retro--space.alt". '-' within a label is escaped as "-h". Returns "" if
+// the handle is invalid or does not fit in one DNS label.
+NET_EXPORT std::string GetSpacesInternalHost(std::string_view handle);
+
+// Decodes an internal host back to its handle, or returns "".
+NET_EXPORT std::string GetSpacesHandleFromInternalHost(std::string_view host);
+
+// Converts between the two URL forms, keeping scheme, port, path, query and
+// ref. Return an invalid GURL if `url` is not in the source form.
+NET_EXPORT GURL GetSpacesInternalUrl(const GURL& handle_url);
+NET_EXPORT GURL GetSpacesHandleUrl(const GURL& internal_url);
+
+// Browser-process switch that mirrors the Spaces resolve method being
+// Enabled. Lets the omnibox treat a bare `retro@space` as a URL.
 NET_EXPORT bool IsSpacesHandleNavigationEnabled();
 NET_EXPORT void SetSpacesHandleNavigationEnabled(bool enabled);
 
-// Network-process map from a Spaces host (the part after '@', e.g. "space")
-// to the address resolved by the browser. Consulted by the host resolver
-// instead of DNS. Thread-safe.
+// Network-process map from an internal host to the address resolved by the
+// browser. Consulted by the host resolver instead of DNS. Thread-safe.
 NET_EXPORT void SetSpacesHostAddress(std::string_view host,
                                      const net::IPAddress& address);
 NET_EXPORT std::optional<net::IPAddress> GetSpacesHostAddress(

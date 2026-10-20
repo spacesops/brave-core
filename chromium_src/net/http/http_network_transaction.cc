@@ -15,10 +15,11 @@
 namespace net {
 namespace {
 
-// Spaces web servers route on the full handle, so http://retro@space/ is sent
-// with `Host: retro@space` rather than `Host: space`.
+// Spaces web servers route on the handle, so http://retro--space.alt/ is sent
+// with `Host: retro@space`.
 std::string GetHostAndOptionalPortForSpaces(const GURL& url) {
-  std::string handle = decentralized_dns::GetSpacesHandle(url);
+  std::string handle =
+      decentralized_dns::GetSpacesHandleFromInternalHost(url.host());
   if (handle.empty() || !decentralized_dns::GetSpacesHostAddress(url.host())) {
     return GetHostAndOptionalPort(url);
   }

@@ -19,8 +19,11 @@
 #define MaybeCreateLoader(...)                                                \
   MaybeCreateLoader(__VA_ARGS__) {                                            \
     if (decentralized_dns::IsSpacesHandleNavigationEnabled() &&               \
-        !decentralized_dns::GetSpacesHandle(tentative_resource_request.url)   \
-             .empty()) {                                                      \
+        (!decentralized_dns::GetSpacesHandle(tentative_resource_request.url)  \
+              .empty() ||                                                     \
+         !decentralized_dns::GetSpacesHandleFromInternalHost(                 \
+              tentative_resource_request.url.host())                          \
+              .empty())) {                                                    \
       std::move(callback).Run({});                                            \
       return;                                                                 \
     }                                                                         \

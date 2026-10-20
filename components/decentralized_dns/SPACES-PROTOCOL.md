@@ -113,41 +113,58 @@ visible effect.
 
 ## Hostname resolution (HTTP only)
 
-`http://retro@space/` loads when the pref is `ENABLED`. Verified manually: the
-page loads from 68.183.128.132. Hooks:
+`http://retro@space/` loads when the pref is `ENABLED`. Verified manually with
+the username-based design: the page loads from 68.183.128.132.
 
-- `net/decentralized_dns/spaces.{h,cc}`: `GetSpacesHandle(GURL)` returns
-  `name@space` when the URL has a username, no password, and a dot-free host.
-  The file also holds the host-to-IP map used by the network service.
+### Per-handle internal host
+
+A URL origin ignores the username. If pages loaded from `http://retro@space/`,
+every handle would share the origin `http://space`. Requests built from the
+origin (`location.origin + "/x"`, the default favicon) would lose the handle,
+and handles would share cookies and storage.
+
+So each handle loads from its own host under `.alt`, the RFC 9476 special-use
+TLD for non-DNS names:
+
+- `retro@space` maps to `retro--space.alt`. `--` separates name and space,
+  and a `-` inside either label is escaped as `-h` (`a-b@c` -> `a-hb--c.alt`),
+  so the mapping is reversible.
+- The whole handle is one label directly under `.alt`. `.alt` is not on the
+  public suffix list, so each handle is its own site. Cookies, storage,
+  permissions and process isolation are per handle, and a `Domain=` cookie
+  can't be shared across handles.
+- The encoded label must fit in 63 characters. Longer handles fail with
+  `ERR_NAME_NOT_RESOLVED`.
+- Page JavaScript sees `http://retro--space.alt/` in `location.href`. Users see
+  and type `http://retro@space/`.
+
+### Hooks
+
+- `net/decentralized_dns/spaces.{h,cc}`: `GetSpacesHandle(GURL)` reads the
+  handle URL form. The file also has the encode/decode helpers and
+  `GetSpacesInternalUrl` / `GetSpacesHandleUrl`, plus the internal-host-to-IP
+  map used by the network service.
 - `browser/spaces/spaces_resolver.{h,cc}` plus the `rs/` cxx bridge resolve
   the handle with the patched Fabric client (Observed trust) and read the
   `ipv4` addr record.
-- `browser/net/decentralized_dns_network_delegate_helper.cc` resolves the
-  handle, then pushes the mapping to the network service through
-  `NetworkService::SetSpacesHostAddress` (a Brave mojom addition). Failures
-  return `ERR_NAME_NOT_RESOLVED`.
+- `browser/net/decentralized_dns_network_delegate_helper.cc`:
+  - It redirects `http://retro@space/...` to `http://retro--space.alt/...`.
+  - For internal hosts, it resolves the handle and pushes the mapping through
+    `NetworkService::SetSpacesHostAddress` (a Brave mojom addition).
+  - Internal hosts fail with `ERR_NAME_NOT_RESOLVED` when Spaces is not
+    Enabled, in private windows, or on failure. They never reach DNS.
 - `chromium_src/net/dns/host_resolver_manager.cc` treats a mapped host as an
   IP literal, so no DNS lookup happens.
 - `chromium_src/net/http/http_network_transaction.cc` sends
-  `Host: retro@space`.
+  `Host: retro@space` for internal hosts.
 - `chromium_src/chrome/browser/ssl/https_upgrades_interceptor.cc` skips HTTPS
-  upgrades for Spaces URLs.
+  upgrades for both URL forms.
 - `chromium_src/components/omnibox/browser/autocomplete_input.cc` treats a
   bare `retro@space` as a URL rather than a search.
-- `chromium_src/components/omnibox/browser/location_bar_model_impl.cc` keeps
-  the username when formatting, so the location bar shows `retro@space`
-  instead of `space`. Other surfaces that use `url_formatter`, such as tab
-  hover cards and history, still strip it.
-- `chromium_src/third_party/blink/renderer/core/dom/icon_url.cc` keeps the
-  username on the default `/favicon.ico` URL. Blink builds that URL from scheme,
-  host and port only, so without this it went out with `Host: space`. Relative
-  subresources already keep the username, and Blink allows them because they
-  match the page's credentials.
-
-Limitation: the origin ignores the username, so every handle shares the origin
-`http://space`. Requests built from the origin, such as
-`location.origin + "/x"`, still go out with `Host: space`. All handles also
-share cookies and storage.
+- `chromium_src/components/omnibox/browser/location_bar_model_impl.cc` shows
+  the internal URL as `http://retro@space/` and keeps the username visible.
+  Other surfaces that use `url_formatter`, such as tab hover cards and history,
+  show `retro--space.alt`.
 
 ## Remaining work (SNS touchpoints to mirror)
 

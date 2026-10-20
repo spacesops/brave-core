@@ -11,13 +11,21 @@
 
 namespace {
 
+// Spaces pages load from http://retro--space.alt/ but are shown as
+// http://retro@space/.
+GURL GetSpacesDisplayUrl(const GURL& url) {
+  GURL handle_url = decentralized_dns::GetSpacesHandleUrl(url);
+  return handle_url.is_valid() ? handle_url : url;
+}
+
 // The username of a Spaces URL is part of the name (`retro@space`), so it
 // must stay visible.
 url_formatter::FormatUrlTypes AdjustFormatTypesForSpaces(
     const GURL& url,
     url_formatter::FormatUrlTypes format_types) {
-  if (decentralized_dns::IsSpacesHandleNavigationEnabled() &&
-      !decentralized_dns::GetSpacesHandle(url).empty()) {
+  if (decentralized_dns::GetSpacesHandleUrl(url).is_valid() ||
+      (decentralized_dns::IsSpacesHandleNavigationEnabled() &&
+       !decentralized_dns::GetSpacesHandle(url).empty())) {
     format_types &= ~url_formatter::kFormatUrlOmitUsernamePassword;
   }
   return format_types;
@@ -25,8 +33,10 @@ url_formatter::FormatUrlTypes AdjustFormatTypesForSpaces(
 
 }  // namespace
 
-#define FormatUrl(url, format_types, ...) \
-  FormatUrl(url, AdjustFormatTypesForSpaces(url, format_types), __VA_ARGS__)
+#define FormatUrl(url, format_types, ...)                   \
+  FormatUrl(GetSpacesDisplayUrl(url),                        \
+            AdjustFormatTypesForSpaces(url, format_types), \
+            __VA_ARGS__)
 
 #include <components/omnibox/browser/location_bar_model_impl.cc>
 

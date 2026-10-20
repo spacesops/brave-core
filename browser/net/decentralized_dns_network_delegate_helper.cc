@@ -57,11 +57,24 @@ int OnBeforeURLRequest_DecentralizedDnsPreRedirectWork(
     return net::OK;
   }
 
-  // Spaces names never fall back to DNS: resolve them here or fail.
-  const std::string spaces_handle = GetSpacesHandle(ctx->request_url());
-  if (!spaces_handle.empty() &&
-      IsSpacesResolveMethodEnabled(g_browser_process->local_state())) {
-    if (ctx->browser_context()->IsOffTheRecord() ||
+  // http://retro@space/ loads as http://retro--space.alt/ so that each
+  // handle gets its own origin.
+  const bool spaces_enabled =
+      IsSpacesResolveMethodEnabled(g_browser_process->local_state());
+  if (spaces_enabled && !GetSpacesHandle(ctx->request_url()).empty()) {
+    const GURL internal_url = GetSpacesInternalUrl(ctx->request_url());
+    if (!internal_url.is_valid()) {
+      return net::ERR_NAME_NOT_RESOLVED;
+    }
+    ctx->set_new_url_spec(internal_url.spec());
+    return net::OK;
+  }
+
+  // Internal Spaces hosts never fall back to DNS: resolve them here or fail.
+  const std::string spaces_handle =
+      GetSpacesHandleFromInternalHost(ctx->request_url().host());
+  if (!spaces_handle.empty()) {
+    if (!spaces_enabled || ctx->browser_context()->IsOffTheRecord() ||
         !ctx->request_url().SchemeIs(url::kHttpScheme) ||
         !brave_wallet::IsAllowed(
             user_prefs::UserPrefs::Get(ctx->browser_context()))) {

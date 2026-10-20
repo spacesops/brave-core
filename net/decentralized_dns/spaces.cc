@@ -19,10 +19,24 @@ namespace decentralized_dns {
 
 namespace {
 
+constexpr std::string_view kInternalTld = ".alt";
+constexpr std::string_view kSeparator = "--";
+constexpr size_t kMaxDnsLabelLength = 63;
+
 bool IsSpacesLabel(std::string_view label) {
   return !label.empty() && std::ranges::all_of(label, [](char c) {
     return base::IsAsciiLower(c) || base::IsAsciiDigit(c) || c == '-';
   });
+}
+
+void AppendEscapedLabel(std::string_view label, std::string& out) {
+  for (char c : label) {
+    if (c == '-') {
+      out.append("-h");
+    } else {
+      out.push_back(c);
+    }
+  }
 }
 
 std::atomic<bool> g_handle_navigation_enabled{false};
@@ -50,6 +64,93 @@ std::string GetSpacesHandle(const GURL& url) {
     return std::string();
   }
   return base::StrCat({name, "@", space});
+}
+
+std::string GetSpacesInternalHost(std::string_view handle) {
+  const size_t at = handle.find('@');
+  if (at == std::string_view::npos) {
+    return std::string();
+  }
+  const std::string_view name = handle.substr(0, at);
+  const std::string_view space = handle.substr(at + 1);
+  if (!IsSpacesLabel(name) || !IsSpacesLabel(space)) {
+    return std::string();
+  }
+  std::string label;
+  AppendEscapedLabel(name, label);
+  label.append(kSeparator);
+  AppendEscapedLabel(space, label);
+  if (label.size() > kMaxDnsLabelLength) {
+    return std::string();
+  }
+  return base::StrCat({label, kInternalTld});
+}
+
+std::string GetSpacesHandleFromInternalHost(std::string_view host) {
+  if (!host.ends_with(kInternalTld)) {
+    return std::string();
+  }
+  const std::string_view label =
+      host.substr(0, host.size() - kInternalTld.size());
+  if (label.size() > kMaxDnsLabelLength) {
+    return std::string();
+  }
+  std::string name;
+  std::string space;
+  std::string* current = &name;
+  for (size_t i = 0; i < label.size(); ++i) {
+    const char c = label[i];
+    if (c != '-') {
+      current->push_back(c);
+      continue;
+    }
+    if (i + 1 == label.size()) {
+      return std::string();
+    }
+    const char next = label[++i];
+    if (next == 'h') {
+      current->push_back('-');
+    } else if (next == '-' && current == &name) {
+      current = &space;
+    } else {
+      return std::string();
+    }
+  }
+  if (current != &space || !IsSpacesLabel(name) || !IsSpacesLabel(space)) {
+    return std::string();
+  }
+  return base::StrCat({name, "@", space});
+}
+
+GURL GetSpacesInternalUrl(const GURL& handle_url) {
+  const std::string host =
+      GetSpacesInternalHost(GetSpacesHandle(handle_url));
+  if (host.empty()) {
+    return GURL();
+  }
+  GURL::Replacements replacements;
+  replacements.ClearUsername();
+  replacements.SetHostStr(host);
+  return handle_url.ReplaceComponents(replacements);
+}
+
+GURL GetSpacesHandleUrl(const GURL& internal_url) {
+  if (!internal_url.is_valid() || !internal_url.SchemeIsHTTPOrHTTPS() ||
+      internal_url.has_username() || internal_url.has_password()) {
+    return GURL();
+  }
+  const std::string handle =
+      GetSpacesHandleFromInternalHost(internal_url.host());
+  if (handle.empty()) {
+    return GURL();
+  }
+  const size_t at = handle.find('@');
+  const std::string_view name = std::string_view(handle).substr(0, at);
+  const std::string_view space = std::string_view(handle).substr(at + 1);
+  GURL::Replacements replacements;
+  replacements.SetUsernameStr(name);
+  replacements.SetHostStr(space);
+  return internal_url.ReplaceComponents(replacements);
 }
 
 bool IsSpacesHandleNavigationEnabled() {
