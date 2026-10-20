@@ -13,6 +13,61 @@ the existing SNS (`.sol`) support. Name-format details live in
 | Actual resolution (Enabled mode) | Not started |
 | Mojo / iOS / Android exposure | Not started |
 
+## Primary example: `retro@space`
+
+A live handle, resolved with the Fabric CLI (`fabric resolve retro@space`),
+which uses libveritas to verify the relay's proof:
+
+```json
+{
+  "anchor": 971172,
+  "anchor_hash": "9641f29cca4fc8948a8126ce9e5003d7ea473966f3477af4ea1bb4672ed7550c",
+  "sovereignty": "sovereign",
+  "handle": "retro@space",
+  "canonical": "retro@space",
+  "alias": null,
+  "script_pubkey": "5120b2c6efcd4597637755465065f46182a46a1c20f2759b3e32e756a19bf98e1e6d",
+  "records": [
+    { "type": "seq", "version": 5 },
+    { "type": "txt", "key": "type", "value": ["spaces-webproxy"] },
+    { "type": "addr", "key": "ipv4", "value": ["68.183.128.132"] },
+    {
+      "type": "sig",
+      "canonical": "retro@space",
+      "handle": "retro@space",
+      "sig": "5ae127c65c044d821cd4bf151c206636504243afe4b2c9377125ddcb5028ea4c309d1ac173b83630432f2be32209eef26c0c8b26c100c3ad7730a734565c2c8a",
+      "flags": 1
+    }
+  ],
+  "fallback_records": [],
+  "delegate": { "status": "unknown" },
+  "commitment": { "status": "unknown" },
+  "num_id": "num1nuwls5fcl6mkqesfv0a8a27gpelvyqvqvpgqjaqwj0ccdd3kzggs569r97"
+}
+```
+
+Fields that matter for browser resolution:
+
+- `records` is the [SIP-7](https://github.com/spacesprotocol/sips/blob/main/sip-0007.mediawiki)
+  record set. Here, `ADDR ipv4` gives a host address and `TXT type =
+  spaces-webproxy` labels what the handle serves. Neither key is in SIP-7's
+  recommended-key list, which only has `website` (TXT) for web content.
+- `seq` is the record-set version; a higher value is newer.
+- `sig` is the owner's signature over the record set (`flags: 1`).
+- `sovereignty`, `anchor` and `anchor_hash` describe the verification result:
+  the Bitcoin block height and hash of the trust anchor the proof was checked
+  against.
+- `num_id` is the handle's permanent numeric ID (bech32m, `num1…`).
+
+The server at `68.183.128.132` is a custom nginx web server on the default
+HTTP port 80 (plain HTTP, no TLS). It is configured to route Spaces Protocol
+hostnames to matching content folders, so a single IP serves many handles and
+picks the site from the requested hostname. This matches the `TXT type =
+spaces-webproxy` marker: the IP is a shared web proxy, not a dedicated host.
+
+`retro@space` is a Spaces handle, not a hostname. How a `.spaces` URL maps to
+it is still an open question (see below).
+
 ## How decentralized DNS works in Brave today
 
 Each name service (Unstoppable Domains, ENS, SNS) has an integer local-state
@@ -78,8 +133,16 @@ visible effect.
   to decide how a `.spaces` hostname maps to a name, for example whether
   `alice.bitcoin.spaces` means `alice@bitcoin`, and how numeric labels are
   addressed (if at all).
-- **What a resolved name points to** (IP, content hash, URL record, etc.) and
-  how that becomes a redirect target.
+- **What a resolved name points to** and how that becomes a redirect target.
+  The `retro@space` example has an `ADDR ipv4` record and a `TXT type =
+  spaces-webproxy` marker rather than a SIP-7 `website` URL, so Brave may need
+  to support an IP address (DNS-like) as well as a URL redirect. The
+  `spaces-webproxy` server is name-based virtual hosting on port 80, so Brave
+  has to connect to the resolved IP while still sending the Spaces hostname in
+  the `Host` header. A plain redirect to `http://68.183.128.132/` would lose
+  the hostname and serve the wrong site (or none). Still to confirm: the exact
+  `Host` value nginx matches on (for example `retro.space.spaces` or
+  `retro@space`).
 - **Trust model.** Is resolution done through a remote resolver service or by
   verifying proofs locally (libveritas)? This affects privacy wording in the
   settings and interstitial strings.
