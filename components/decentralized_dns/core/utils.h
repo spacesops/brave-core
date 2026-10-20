@@ -42,7 +42,6 @@ ResolveMethodTypes GetSnsResolveMethod(PrefService* local_state);
 bool IsSnsResolveMethodAsk(PrefService* local_state);
 bool IsSnsResolveMethodEnabled(PrefService* local_state);
 
-bool IsSpacesTLD(std::string_view host);
 void SetSpacesResolveMethod(PrefService* local_state,
                             ResolveMethodTypes method);
 ResolveMethodTypes GetSpacesResolveMethod(PrefService* local_state);

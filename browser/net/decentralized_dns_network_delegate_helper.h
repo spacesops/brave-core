@@ -15,6 +15,7 @@
 #include "brave/browser/net/url_context.h"
 #include "brave/components/brave_wallet/common/buildflags/buildflags.h"
 #include "net/base/completion_once_callback.h"
+#include "net/base/ip_address.h"
 
 #if BUILDFLAG(ENABLE_BRAVE_WALLET)
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
@@ -52,6 +53,12 @@ void OnBeforeURLRequest_SnsRedirectWork(
     const brave::ResponseCallback& next_callback,
     T<brave::BraveRequestInfo> ctx,
     const std::optional<GURL>& url);
+
+template <template <typename> class T>
+void OnBeforeURLRequest_SpacesResolveWork(
+    const brave::ResponseCallback& next_callback,
+    T<brave::BraveRequestInfo> ctx,
+    std::optional<net::IPAddress> address);
 #endif  // BUILDFLAG(ENABLE_BRAVE_WALLET)
 
 }  // namespace decentralized_dns

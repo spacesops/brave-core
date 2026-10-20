@@ -125,6 +125,7 @@
 #if BUILDFLAG(ENABLE_BRAVE_WALLET)
 #include "brave/browser/brave_wallet/wallet_data_files_installer_delegate_impl.h"
 #include "brave/components/brave_wallet/browser/wallet_data_files_installer.h"
+#include "brave/components/decentralized_dns/browser/spaces/spaces_resolver.h"
 #endif
 
 #if BUILDFLAG(ENABLE_LOCAL_AI)
@@ -230,6 +231,10 @@ void BraveBrowserProcessImpl::Init() {
   brave_policy::AdBlockOnlyModePolicyManager::GetInstance()->Init(
       local_state());
 
+#if BUILDFLAG(ENABLE_BRAVE_WALLET)
+  decentralized_dns::SpacesResolver::GetInstance()->Init(local_state());
+#endif
+
   // Initialize BraveOriginPolicyManager here so its managed prefs are merged
   // into local state before any profile's policy connector polls
   // `BraveProfilePolicyProvider::IsInitializationComplete`. Without this,
@@ -284,6 +289,7 @@ void BraveBrowserProcessImpl::StartTearDown() {
   // component_updater::ComponentUpdateService::Observer, so it needs to be
   // reset before the CrxUpdateService is destroyed.
   brave_wallet::WalletDataFilesInstaller::GetInstance().Reset();
+  decentralized_dns::SpacesResolver::GetInstance()->Shutdown();
 #endif
 #if BUILDFLAG(ENABLE_LOCAL_AI)
   // Drop the local models registrar's pointers to CrxUpdateService and

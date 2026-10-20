@@ -111,6 +111,44 @@ to read and write a pref, it has to be on the allowlist in
 Because nothing reads the pref yet, the default of `ASK` currently has no
 visible effect.
 
+## Hostname resolution (HTTP only)
+
+`http://retro@space/` loads when the pref is `ENABLED`. Verified manually: the
+page loads from 68.183.128.132. Hooks:
+
+- `net/decentralized_dns/spaces.{h,cc}`: `GetSpacesHandle(GURL)` returns
+  `name@space` when the URL has a username, no password, and a dot-free host.
+  The file also holds the host-to-IP map used by the network service.
+- `browser/spaces/spaces_resolver.{h,cc}` plus the `rs/` cxx bridge resolve
+  the handle with the patched Fabric client (Observed trust) and read the
+  `ipv4` addr record.
+- `browser/net/decentralized_dns_network_delegate_helper.cc` resolves the
+  handle, then pushes the mapping to the network service through
+  `NetworkService::SetSpacesHostAddress` (a Brave mojom addition). Failures
+  return `ERR_NAME_NOT_RESOLVED`.
+- `chromium_src/net/dns/host_resolver_manager.cc` treats a mapped host as an
+  IP literal, so no DNS lookup happens.
+- `chromium_src/net/http/http_network_transaction.cc` sends
+  `Host: retro@space`.
+- `chromium_src/chrome/browser/ssl/https_upgrades_interceptor.cc` skips HTTPS
+  upgrades for Spaces URLs.
+- `chromium_src/components/omnibox/browser/autocomplete_input.cc` treats a
+  bare `retro@space` as a URL rather than a search.
+- `chromium_src/components/omnibox/browser/location_bar_model_impl.cc` keeps
+  the username when formatting, so the location bar shows `retro@space`
+  instead of `space`. Other surfaces that use `url_formatter`, such as tab
+  hover cards and history, still strip it.
+- `chromium_src/third_party/blink/renderer/core/dom/icon_url.cc` keeps the
+  username on the default `/favicon.ico` URL. Blink builds that URL from scheme,
+  host and port only, so without this it went out with `Host: space`. Relative
+  subresources already keep the username, and Blink allows them because they
+  match the page's credentials.
+
+Limitation: the origin ignores the username, so every handle shares the origin
+`http://space`. Requests built from the origin, such as
+`location.origin + "/x"`, still go out with `Host: space`. All handles also
+share cookies and storage.
+
 ## Remaining work (SNS touchpoints to mirror)
 
 - [ ] Throttle: add an `IsSpacesTLD && IsSpacesResolveMethodAsk` branch.

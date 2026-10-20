@@ -5,6 +5,8 @@
 
 module network.mojom;
 
+import "services/network/public/mojom/ip_address.mojom";
+
 [BraveAdd]
 struct DnsRequestCounts {
   uint64 total_count;
@@ -14,4 +16,8 @@ struct DnsRequestCounts {
 [BraveExtend]
 interface NetworkService {
   GetDnsRequestCountsAndReset() => (DnsRequestCounts counts);
+
+  // Routes the Spaces host (the part after '@' in e.g. http://retro@space/)
+  // to `address` instead of DNS.
+  SetSpacesHostAddress(string host, IPAddress address) => ();
 };

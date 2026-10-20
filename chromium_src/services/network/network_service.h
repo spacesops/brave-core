@@ -11,6 +11,10 @@
 #define DisableQuic                                                         \
   GetDnsRequestCountsAndReset(GetDnsRequestCountsAndResetCallback callback) \
       override;                                                             \
+  void SetSpacesHostAddress(const std::string& host,                        \
+                            const net::IPAddress& address,                  \
+                            SetSpacesHostAddressCallback callback)          \
+      override;                                                             \
   void DisableQuic
 #define UpdateKeyPinsList                              \
   UpdateKeyPinsList_Unused(mojom::PinListPtr pin_list, \

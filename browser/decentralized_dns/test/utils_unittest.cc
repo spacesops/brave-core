@@ -92,13 +92,6 @@ TEST_F(UtilsUnitTest, IsSnsResolveMethodEnabledd) {
   EXPECT_TRUE(IsSnsResolveMethodEnabled(local_state()));
 }
 
-TEST_F(UtilsUnitTest, IsSpacesTLD) {
-  EXPECT_TRUE(IsSpacesTLD("test.spaces"));
-  EXPECT_FALSE(IsSpacesTLD("test.com"));
-  EXPECT_FALSE(IsSpacesTLD("test.sol"));
-  EXPECT_FALSE(IsSpacesTLD("spaces"));
-}
-
 TEST_F(UtilsUnitTest, IsSpacesResolveMethodAsk) {
   EXPECT_TRUE(IsSpacesResolveMethodAsk(local_state()));
 

@@ -17,8 +17,6 @@ namespace decentralized_dns {
 inline constexpr std::string_view kEthDomain = ".eth";
 inline constexpr std::string_view kDNSForEthDomain = ".eth.link";
 inline constexpr std::string_view kSolDomain = ".sol";
-inline constexpr std::string_view kSpacesDomain = ".spaces";
-
 // Checks if a given host ends with the suffix of an unstoppable domain, e.g.
 // foo.crypto. Returns a reference to the domain entry.
 NET_EXPORT std::optional<std::string_view> GetUnstoppableDomainSuffix(

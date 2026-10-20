@@ -157,10 +157,6 @@ bool IsSnsResolveMethodEnabled(PrefService* local_state) {
   return GetSnsResolveMethod(local_state) == ResolveMethodTypes::ENABLED;
 }
 
-bool IsSpacesTLD(std::string_view host) {
-  return host.ends_with(kSpacesDomain);
-}
-
 void SetSpacesResolveMethod(PrefService* local_state,
                             ResolveMethodTypes method) {
   local_state->SetInteger(kSpacesResolveMethod, static_cast<int>(method));

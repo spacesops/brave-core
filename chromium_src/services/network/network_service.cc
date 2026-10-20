@@ -9,10 +9,19 @@
 #include <services/network/network_service.cc>
 #undef UpdateKeyPinsList
 
+#include "brave/net/decentralized_dns/spaces.h"
 #include "brave/net/dns/secure_dns_counter.h"
 #include "services/network/public/mojom/network_service.mojom.h"
 
 namespace network {
+
+void NetworkService::SetSpacesHostAddress(
+    const std::string& host,
+    const net::IPAddress& address,
+    SetSpacesHostAddressCallback callback) {
+  decentralized_dns::SetSpacesHostAddress(host, address);
+  std::move(callback).Run();
+}
 
 void NetworkService::GetDnsRequestCountsAndReset(
     mojom::NetworkService::GetDnsRequestCountsAndResetCallback callback) {

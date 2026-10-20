@@ -17,14 +17,21 @@
 #include "brave/components/brave_wallet/browser/json_rpc_service.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/buildflags/buildflags.h"
+#include "brave/components/decentralized_dns/browser/spaces/spaces_resolver.h"
 #include "brave/components/decentralized_dns/core/constants.h"
 #include "brave/components/decentralized_dns/core/utils.h"
 #include "brave/components/ipfs/ipfs_utils.h"
+#include "brave/net/decentralized_dns/spaces.h"
 #include "chrome/browser/browser_process.h"
 #include "components/user_prefs/user_prefs.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/network_service_instance.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
+#include "net/base/ip_address.h"
 #include "net/base/net_errors.h"
+#include "services/network/public/mojom/network_service.mojom.h"
+#include "url/url_constants.h"
 
 static_assert(BUILDFLAG(ENABLE_BRAVE_WALLET));
 
@@ -46,8 +53,28 @@ int OnBeforeURLRequest_DecentralizedDnsPreRedirectWork(
   DCHECK(ctx);
   DCHECK(!next_callback.is_null());
 
-  if (!ctx->browser_context() || ctx->browser_context()->IsOffTheRecord() ||
-      !g_browser_process) {
+  if (!ctx->browser_context() || !g_browser_process) {
+    return net::OK;
+  }
+
+  // Spaces names never fall back to DNS: resolve them here or fail.
+  const std::string spaces_handle = GetSpacesHandle(ctx->request_url());
+  if (!spaces_handle.empty() &&
+      IsSpacesResolveMethodEnabled(g_browser_process->local_state())) {
+    if (ctx->browser_context()->IsOffTheRecord() ||
+        !ctx->request_url().SchemeIs(url::kHttpScheme) ||
+        !brave_wallet::IsAllowed(
+            user_prefs::UserPrefs::Get(ctx->browser_context()))) {
+      return net::ERR_NAME_NOT_RESOLVED;
+    }
+    SpacesResolver::GetInstance()->Resolve(
+        spaces_handle, g_browser_process->shared_url_loader_factory(),
+        base::BindOnce(&OnBeforeURLRequest_SpacesResolveWork<T>, next_callback,
+                       ctx));
+    return net::ERR_IO_PENDING;
+  }
+
+  if (ctx->browser_context()->IsOffTheRecord()) {
     return net::OK;
   }
 
@@ -167,6 +194,29 @@ void OnBeforeURLRequest_UnstoppableDomainsRedirectWork(
   if (!next_callback.is_null()) {
     next_callback.Run();
   }
+}
+
+template <template <typename> class T>
+void OnBeforeURLRequest_SpacesResolveWork(
+    const brave::ResponseCallback& next_callback,
+    T<brave::BraveRequestInfo> ctx,
+    std::optional<net::IPAddress> address) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (!ctx || next_callback.is_null()) {
+    return;
+  }
+  if (!address) {
+    ctx->set_pending_error(net::ERR_NAME_NOT_RESOLVED);
+    next_callback.Run();
+    return;
+  }
+  content::GetNetworkService()->SetSpacesHostAddress(
+      std::string(ctx->request_url().host()), *address,
+      mojo::WrapCallbackWithDefaultInvokeIfNotRun(base::BindOnce(
+          [](const brave::ResponseCallback& next_callback) {
+            next_callback.Run();
+          },
+          next_callback)));
 }
 
 template int OnBeforeURLRequest_DecentralizedDnsPreRedirectWork<

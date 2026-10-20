@@ -8,6 +8,7 @@
 #include "base/feature_list.h"
 #include "brave/browser/brave_browser_process.h"
 #include "brave/components/brave_shields/core/browser/brave_shields_utils.h"
+#include "brave/net/decentralized_dns/spaces.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "net/base/features.h"
 #include "net/base/url_util.h"
@@ -17,6 +18,12 @@
 
 #define MaybeCreateLoader(...)                                                \
   MaybeCreateLoader(__VA_ARGS__) {                                            \
+    if (decentralized_dns::IsSpacesHandleNavigationEnabled() &&               \
+        !decentralized_dns::GetSpacesHandle(tentative_resource_request.url)   \
+             .empty()) {                                                      \
+      std::move(callback).Run({});                                            \
+      return;                                                                 \
+    }                                                                         \
     if (base::FeatureList::IsEnabled(net::features::kBraveHttpsByDefault)) {  \
       HostContentSettingsMap* map =                                           \
           HostContentSettingsMapFactory::GetForProfile(browser_context);      \
